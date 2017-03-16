@@ -17,15 +17,20 @@ from keras.models import Model, Sequential
 K.set_image_dim_ordering('tf')
 
 
-def generator(latent_size, return_intermediate=False):
+#def generator(latent_size, return_intermediate=False):
+def generator(latent_size, img_shape, return_intermediate=False):
+    '''
+    img_shape = tuple of image eta-phi dimensions (e.g. (3, 96))
+    '''
 
- 
     z = Input(shape=(latent_size, ))
 
     # DCGAN-style project & reshape,
-    x = Dense(5 * 98 * 12, input_dim=latent_size)(z)
-    x = Reshape((5, 98, 12))(x)
-    
+    #x = Dense(5 * 98 * 12, input_dim=latent_size)(z)
+    #x = Reshape((5, 98, 12))(x)
+    x = Dense((img_shape[0] + 2) * (img_shape[1] + 2) * 12, input_dim=latent_size)(z)
+    x =Reshape((img_shape[0] + 2, img_shape[1] + 2, 12))(x)
+
     # block 1: (None, 5, 98, 12) => (None, 5, 98, 8),
     x = Conv2D(8, 2, 2, border_mode='same', init='he_uniform')(x)
     x = LeakyReLU()(x)

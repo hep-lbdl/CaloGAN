@@ -98,40 +98,6 @@ if __name__ == '__main__':
     adam_lr = parse_args.adam_lr
     adam_beta_1 = parse_args.adam_beta
 
-    # build the discriminator
-    print('Building discriminator')
-    discriminator = build_discriminator()
-    discriminator.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy'
-    )
-
-    # build the generator
-    print('Building generator')
-    generator = build_generator(latent_size)
-    generator.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy'
-    )
-
-    latent = Input(shape=(latent_size, ), name='z')
-
-    # symbolic predict
-    gan_image = generator(latent)
-
-    # we only want to be able to train generation for the combined model
-    discriminator.trainable = False
-    isfake = discriminator(gan_image)
-    combined = Model(
-        input=latent,
-        output=isfake,
-        name='combined_model'
-    )
-
-    combined.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy')
-
     datafile = parse_args.dataset
 
     d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
@@ -144,9 +110,9 @@ if __name__ == '__main__':
     )
 
     # -- reshape to put them into unravelled, 2D image format
-    first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
+    #first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
     # second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
-    # third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
+    third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
 
 
     # we don't really need validation data as it's a bit meaningless for GANs,
@@ -154,7 +120,8 @@ if __name__ == '__main__':
     # collapse to a particularly signal or background-like image
     #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9)
     from sklearn.utils import shuffle
-    X = shuffle(first)
+    #X = shuffle(first)
+    X = shuffle(third)
 
     # tensorflow ordering
     # X_train = np.expand_dims(X_train, axis=-1)
@@ -169,6 +136,85 @@ if __name__ == '__main__':
 
     # train_history = defaultdict(list)
     # test_history = defaultdict(list)
+
+
+    # build the discriminator
+    print('Building discriminator')
+    discriminator = build_discriminator(sizes[4:])
+    discriminator.compile(
+        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+        loss='binary_crossentropy'
+    )
+
+    # build the generator
+    print('Building generator')
+    #generator = build_generator(latent_size)
+    generator = build_generator(latent_size, sizes[4:])
+    generator.compile(
+        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+        loss='binary_crossentropy'
+    )
+
+    # load in previous training
+    #generator.load_weights('./params_generator_epoch_099.hdf5')
+
+    latent = Input(shape=(latent_size, ), name='z')
+
+    # symbolic predict
+    gan_image = generator(latent)
+
+    # we only want to be able to train generation for the combined model
+    discriminator.trainable = False
+    # isfake = discriminator(gan_image)
+    isfake = discriminator(gan_image)
+    combined = Model(
+        input=latent,
+        output=isfake,
+        name='combined_model'
+    )
+
+    combined.compile(
+        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+        loss='binary_crossentropy')
+
+    # MOVED ABOVE:
+    # datafile = parse_args.dataset
+
+    # d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
+    # with open(datafile) as f:
+    #     sizes = map(int, f.readline().strip().split(","))
+    # first, second, third = np.split(
+    #     d,
+    #     indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
+    #     axis=1
+    # )
+
+    # # -- reshape to put them into unravelled, 2D image format
+    # first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
+    # # second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
+    # # third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
+
+
+    # # we don't really need validation data as it's a bit meaningless for GANs,
+    # # but since we have an auxiliary task, it can be helpful to debug mode
+    # # collapse to a particularly signal or background-like image
+    # #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9)
+    # from sklearn.utils import shuffle
+    # X = shuffle(first)
+
+    # # tensorflow ordering
+    # # X_train = np.expand_dims(X_train, axis=-1)
+    # # X_test = np.expand_dims(X_test, axis=-1)
+
+    # # nb_train, nb_test = X_train.shape[0], X_test.shape[0]
+
+    # # scale the pT levels by 100 (help neural nets w/ dynamic range - they
+    # # need all the help they can get)
+    # X = X.astype(np.float32) / 500
+    # #X_test = X_test.astype(np.float32) / 500
+
+    # # train_history = defaultdict(list)
+    # # test_history = defaultdict(list)
 
     for epoch in range(nb_epochs):
         print('Epoch {} of {}'.format(epoch + 1, nb_epochs))

@@ -20,9 +20,10 @@ from ops import minibatch_discriminator, minibatch_output_shape, Dense3D
 K.set_image_dim_ordering('tf')
 
 
-def discriminator():
+def discriminator(img_shape):
 
-    image = Input(shape=(3, 96, 1))
+    # image = Input(shape=(3, 96, 1))
+    image = Input(shape=(img_shape[0], img_shape[1], 1))
 
     # block 1: normal 2x2 conv,
     # *NO* batchnorm (recommendation from [arXiv/1511.06434])
@@ -58,7 +59,8 @@ def discriminator():
 
     dnn = Model(image, h)
 
-    evt_image = Input(shape=(3, 96, 1))
+    # evt_image = Input(shape=(3, 96, 1))
+    evt_image = Input(shape=(img_shape[0], img_shape[1], 1))
 
     out = dnn(evt_image)
 
