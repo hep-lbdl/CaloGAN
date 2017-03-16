@@ -1,0 +1,17 @@
+# Macro file for example 
+# 
+# To be run preferably in batch, without graphics:
+# % example[a,b,c,d] run2.mac
+#
+# /run/numberOfWorkers 4
+/run/initialize
+#
+# Default kinemtics: 
+# electron 50 MeV in direction (0.,0.,1.)
+# 1000 events
+#
+/run/printProgress 10000
+/gun/particle e-
+/gun/energy 10 GeV
+/run/beamOn 12
+
