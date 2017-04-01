@@ -68,7 +68,12 @@ RunAction::RunAction()
 
   // Creating ntuple
   //
-  analysisManager->CreateNtuple("", "Edep and TrackL");
+
+  char const* val = getenv("GAN_TREENAME"); 
+  std::string fname = (val == NULL ? std::string("fancy_tree") : std::string(val));
+
+
+  analysisManager->CreateNtuple(fname.c_str(), "Edep and TrackL");
   analysisManager->CreateNtupleDColumn("Eabs");
   analysisManager->CreateNtupleDColumn("Egap");
   analysisManager->CreateNtupleDColumn("Labs");
