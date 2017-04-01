@@ -80,7 +80,6 @@ RunAction::RunAction()
 
   for (int i = 0; i < total_bins; ++i) {
 
-    std::string s;
     std::stringstream out;
     out << i;
     analysisManager->CreateNtupleDColumn("cell_" + out.str());

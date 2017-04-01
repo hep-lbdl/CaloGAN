@@ -63,7 +63,7 @@ void RunData::FillPerEvent()
 
   for (int i = 0; i < kNumCells; ++i) {
     // analysisManager->CreateNtupleDColumn("cell_" + std::to_string(i));
-    analysisManager->FillNtupleDColumn(i, fEdep[i])
+    analysisManager->FillNtupleDColumn(i, fEdep[i]);
   }
 
   // for ( G4int i=0; i<kDim; i++) {
