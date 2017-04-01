@@ -36,7 +36,7 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-RunData::RunData() : G4Run()
+RunData::RunData() : G4Run(), fNumCells(4815)
 {
   fVolumeNames[0] = "Absorber";
   fVolumeNames[1] = "Gap";

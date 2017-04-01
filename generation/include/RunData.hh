@@ -75,6 +75,7 @@ private:
   G4String  fVolumeNames[kDim];
   G4double  fEdep[kDim];
   G4double  fTrackLength[kDim]; 
+  G4int     fNumCells;
 };
 
 // inline functions
