@@ -105,7 +105,7 @@ void RunAction::BeginOfRunAction(const G4Run* run)
   // Open an output file
   //
 
-  char const* val = getenv(key.c_str()); 
+  char const* val = getenv("GAN_FNAME"); 
   return val == NULL ? std::string("plz_work_kthxbai") : std::string(val);
 
 
