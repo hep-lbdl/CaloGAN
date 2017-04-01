@@ -92,15 +92,15 @@ void EventAction::EndOfEventAction(const G4Event* event)
   //
   G4int eventID = event->GetEventID();
   G4int printModulo = G4RunManager::GetRunManager()->GetPrintProgress();
-  if ( ( printModulo > 0 ) && ( eventID % printModulo == 0 ) ) {
-    G4cout << "---> End of event: " << eventID << G4endl;     
+  // if ( ( printModulo > 0 ) && ( eventID % printModulo == 0 ) ) {
+  //   G4cout << "---> End of event: " << eventID << G4endl;     
 
-    PrintEventStatistics(
-      runData->GetEdep(kAbs),
-      runData->GetTrackLength(kAbs),
-      runData->GetEdep(kGap),
-      runData->GetTrackLength(kGap));
-  }
+  //   PrintEventStatistics(
+  //     runData->GetEdep(kAbs),
+  //     runData->GetTrackLength(kAbs),
+  //     runData->GetEdep(kGap),
+  //     runData->GetTrackLength(kGap));
+  // }
 }  
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
