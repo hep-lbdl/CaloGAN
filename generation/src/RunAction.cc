@@ -76,7 +76,7 @@ RunAction::RunAction()
 
   analysisManager->CreateNtuple(fname.c_str(), "Edep and TrackL");
 
-  int total_bins = 4815;
+  int total_bins = 504;
 
   for (int i = 0; i < total_bins; ++i) {
 

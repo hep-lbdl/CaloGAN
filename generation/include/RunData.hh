@@ -40,7 +40,7 @@ enum {
   kAbs = 0,
   kGap = 1,
   kDim = 2, 
-  kNumCells = 4815
+  kNumCells = 504
 };  
 
 ///  Run data class

@@ -55,9 +55,9 @@ SteppingAction::~SteppingAction()
 int SteppingAction::WhichZBin(double zpos){
 
   //zsegmentation = TH1F("","",3,np.array([-240.,-150.,197.,240.]))
-  if (zpos < -150.) return 1;
-  else if (zpos < 197.) return 2;
-  else return 3;
+  if (zpos < -150.) return 0;
+  else if (zpos < 197.) return 1;
+  else return 2;
 
 }
 
@@ -72,19 +72,38 @@ int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
   int nbins3y = 6;
   int nbinsx[]={nbins1x,nbins2x,nbins3x};
   int nbinsy[]={nbins1y,nbins2y,nbins3y};
-  for (int i=1; i<=nbinsx[zbin-1]; i++){
-    if (xpos < -240 + i*480/nbinsx[zbin-1]){
-      xbin = i;
+  for (int i=1; i<=nbinsx[zbin]; i++){
+    if (xpos < -240 + i*480/nbinsx[zbin]){
+      xbin = i - 1;
       break;
     }
   }
-  for (int i=1; i<=nbinsy[zbin-1]; i++){
-    if (ypos < -240 +i*480/nbinsy[zbin-1]){
-      ybin = i;
+  for (int i=1; i<=nbinsy[zbin]; i++){
+    if (ypos < -240 +i*480/nbinsy[zbin]){
+      ybin = i - 1;
       break;
     }
   }
-  return zbin*1e4 + xbin*1e2 + ybin;
+
+
+  int lvl1 = nbins1x * nbins1y;
+  int lvl2 = nbins2x * nbins2y;
+
+
+
+  if (zbin == 0) {
+    return xbin * nbins1y + ybin;
+  } 
+  else if (zbin == 1) {
+    return lvl1 + (xbin * nbins2y + ybin);
+  }
+  else {
+    return (lvl1 + lvl2) + (xbin * nbins3y + ybin);
+  }
+
+
+
+  // return zbin*1e4 + xbin*1e2 + ybin;
   //sampling1_eta = TH2F("","",3,-240.,240.,480/5,-240.,240.)
   //sampling2_eta = TH2F("","",480/40,-240.,240.,480/40,-240.,240.)
   //sampling3_eta = TH2F("","",480/40,-240.,240.,480/80,-240.,240.)
