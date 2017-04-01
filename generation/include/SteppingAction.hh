@@ -32,6 +32,7 @@
 #define SteppingAction_h 1
 
 #include "G4UserSteppingAction.hh"
+#include "g4root.hh"
 
 class DetectorConstruction;
 
@@ -48,7 +49,9 @@ public:
   virtual ~SteppingAction();
 
   virtual void UserSteppingAction(const G4Step* step);
-    
+  int WhichZBin(double zpos);
+  int WhichXYbin(double xpos, double ypos, int zbin);
+
 private:
   const DetectorConstruction* fDetConstruction;
 };

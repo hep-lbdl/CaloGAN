@@ -52,6 +52,44 @@ SteppingAction::~SteppingAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+int SteppingAction::WhichZBin(double zpos){
+
+  //zsegmentation = TH1F("","",3,np.array([-240.,-150.,197.,240.]))
+  if (zpos < -150.) return 1;
+  else if (zpos < 197.) return 2;
+  else return 3;
+
+}
+
+int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
+  int xbin = -1;
+  int ybin = -1;
+  int nbins1x = 3;
+  int nbins2x = 12;
+  int nbins3x = 12;
+  int nbins1y = 96;
+  int nbins2y = 12;
+  int nbins3y = 6;
+  int nbinsx[]={nbins1x,nbins2x,nbins3x};
+  int nbinsy[]={nbins1y,nbins2y,nbins3y};
+  for (int i=1; i<=nbinsx[zbin-1]; i++){
+    if (xpos < -240 + i*480/nbinsx[zbin-1]){
+      xbin = i;
+      break;
+    }
+  }
+  for (int i=1; i<=nbinsy[zbin-1]; i++){
+    if (ypos < -240 +i*480/nbinsy[zbin-1]){
+      ybin = i;
+      break;
+    }
+  }
+  return zbin*1e4 + xbin*1e2 + ybin;
+  //sampling1_eta = TH2F("","",3,-240.,240.,480/5,-240.,240.)
+  //sampling2_eta = TH2F("","",480/40,-240.,240.,480/40,-240.,240.)
+  //sampling3_eta = TH2F("","",480/40,-240.,240.,480/80,-240.,240.)
+}
+
 void SteppingAction::UserSteppingAction(const G4Step* step)
 {
 // Collect energy and track length step by step
@@ -76,11 +114,16 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 
   //G4cout << "sqr " << pos1.z() << " " << pos2.z() << " " << pos1.x() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetKineticEnergy() << G4endl;
       
-  G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << G4endl;
+  //G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << G4endl;
+  int mybin = WhichXYbin(pos1.x(),pos1.y(),WhichZBin(pos1.z()));
+  //G4cout << "zbin " << WhichZBin(pos1.z()) << " " << mybin << " " << mybin%100 << std::endl;
   
   RunData* runData = static_cast<RunData*>
     (G4RunManager::GetRunManager()->GetNonConstCurrentRun());
 
+  runData->Add(mybin, edep, stepLength); 
+
+  /*
   if ( volume == fDetConstruction->GetAbsorberPV() ) {
     runData->Add(kAbs, edep, stepLength);
   }
@@ -91,6 +134,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     runData->Add(kAbs, edep, stepLength);
     G4cout << "where am i ??? " << G4endl;
   }
+  */
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
