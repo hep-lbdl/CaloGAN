@@ -104,7 +104,7 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
   // Open an output file
   //
-  G4String fileName = "PLEASEWORK";
+  G4String fileName = env_var("GAN_FNAME", "plz_work_kthxbai");
   analysisManager->OpenFile(fileName);
 }
 
