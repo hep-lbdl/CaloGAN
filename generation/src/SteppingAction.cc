@@ -73,13 +73,13 @@ int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
   int nbinsx[]={nbins1x,nbins2x,nbins3x};
   int nbinsy[]={nbins1y,nbins2y,nbins3y};
   for (int i=1; i<=nbinsx[zbin]; i++){
-    if (xpos < -240 + i*480/nbinsx[zbin]){
+    if ((xpos < -240 + i*480/nbinsx[zbin]) && (xpos > -240)){
       xbin = i - 1;
       break;
     }
   }
   for (int i=1; i<=nbinsy[zbin]; i++){
-    if (ypos < -240 +i*480/nbinsy[zbin]){
+    if ((ypos < -240 +i*480/nbinsy[zbin]) && (ypos > -240)){
       ybin = i - 1;
       break;
     }
@@ -88,8 +88,13 @@ int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
 
   int lvl1 = nbins1x * nbins1y;
   int lvl2 = nbins2x * nbins2y;
+  int lvl3 = nbins3x * nbins3y;
 
 
+
+  if ((xbin == -1) || (ybin == -1)) {
+    return lvl1 + lvl2 + lvl3 + zbin;
+  }
 
   if (zbin == 0) {
     return xbin * nbins1y + ybin;
