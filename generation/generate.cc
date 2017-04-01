@@ -99,7 +99,7 @@ int main(int argc,char** argv)
   //
   G4Random::setTheEngine(new CLHEP::RanecuEngine);
 
-  G4long seed = time(NULL);
+  G4long seed = abs(((time(NULL) * 181) * ((getpid() - 83) * 359)) % 104729);
   CLHEP::HepRandom::setTheSeed(seed);
   
   // Construct the default run manager
