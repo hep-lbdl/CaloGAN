@@ -46,6 +46,7 @@
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
 
+#include "time.h"
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 namespace {
@@ -97,6 +98,9 @@ int main(int argc,char** argv)
   // Choose the Random engine
   //
   G4Random::setTheEngine(new CLHEP::RanecuEngine);
+
+  G4long seed = abs(((time(NULL) * 181) * ((getpid() - 83) * 359)) % 104729);
+  CLHEP::HepRandom::setTheSeed(seed);
   
   // Construct the default run manager
   //
