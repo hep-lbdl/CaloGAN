@@ -28,6 +28,7 @@
 /// \file RunAction.cc
 /// \brief Implementation of the RunAction class
 
+#include <string>
 #include "RunAction.hh"
 #include "RunData.hh"
 #include "Analysis.hh"
