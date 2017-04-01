@@ -31,16 +31,8 @@
 #ifndef RunAction_h
 #define RunAction_h 1
 
-#include <string>
 #include "G4UserRunAction.hh"
 #include "globals.hh"
-
-
-std::string env_var(std::string const& key, std::string const& def)
-{
-    char const* val = getenv(key.c_str()); 
-    return val == NULL ? std::string(def) : std::string(val);
-}
 
 class G4Run;
 

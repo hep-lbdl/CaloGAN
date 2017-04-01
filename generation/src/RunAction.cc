@@ -104,7 +104,12 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
   // Open an output file
   //
-  G4String fileName = env_var("GAN_FNAME", "plz_work_kthxbai");
+
+  char const* val = getenv(key.c_str()); 
+  return val == NULL ? std::string("plz_work_kthxbai") : std::string(val);
+
+
+  G4String fileName = val.c_str();
   analysisManager->OpenFile(fileName);
 }
 
