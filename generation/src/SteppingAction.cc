@@ -95,8 +95,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 // Collect energy and track length step by step
 
   // get volume of the current step
-  G4VPhysicalVolume* volume 
-    = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
+  // G4VPhysicalVolume* volume 
+  //   = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
   
   // energy deposit
   G4double edep = step->GetTotalEnergyDeposit();
