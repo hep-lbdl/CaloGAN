@@ -11,3 +11,4 @@ Next, you can type `make` which should build an executable called `generate`. Be
 
 To run the generation script, run `generate -m cfg/run2.mac`.
 
+To launch a batch job on PDSF, simply run `./launch <num_jobs>`, to launch `<num_jobs>` concurrent tasks in a job array.

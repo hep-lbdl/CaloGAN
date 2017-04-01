@@ -10,8 +10,8 @@
 # electron 50 MeV in direction (0.,0.,1.)
 # 1000 events
 #
-/run/printProgress 10000
+/run/printProgress 1
 /gun/particle e-
 /gun/energy 10 GeV
-/run/beamOn 12
+/run/beamOn 1000
 
