@@ -121,7 +121,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   RunData* runData = static_cast<RunData*>
     (G4RunManager::GetRunManager()->GetNonConstCurrentRun());
 
-  runData->Add(mybin, edep, stepLength); 
+  // runData->Add(mybin, edep, stepLength); 
+  runData->Add(mybin, edep); 
 
   /*
   if ( volume == fDetConstruction->GetAbsorberPV() ) {
