@@ -106,7 +106,7 @@ void RunAction::BeginOfRunAction(const G4Run* run)
   //
 
   char const* val = getenv("GAN_FNAME"); 
-  auto fname = (val == NULL ? std::string("plz_work_kthxbai") : std::string(val));
+  std::string fname = (val == NULL ? std::string("plz_work_kthxbai") : std::string(val));
 
 
   G4String fileName = fname.c_str();
