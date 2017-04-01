@@ -40,7 +40,7 @@ enum {
   kAbs = 0,
   kGap = 1,
   kDim = 2, 
-  kNumCells = 504 + 3
+  kNumCells = 504 + 3 // 3 overflow bins for the three calo layers
 };  
 
 ///  Run data class
