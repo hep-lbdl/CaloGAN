@@ -36,14 +36,14 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-RunData::RunData() : G4Run(), fNumCells(4815)
+RunData::RunData() : G4Run()//, fNumCells(4815)
 {
-  fVolumeNames[0] = "Absorber";
-  fVolumeNames[1] = "Gap";
+  // fVolumeNames[0] = "Absorber";
+  // fVolumeNames[1] = "Gap";
  
-  for ( G4int i=0; i<kDim; i++) {
+  for ( G4int i=0; i < kNumCells; i++) {
     fEdep[i] = 0.;
-    fTrackLength[i] = 0.; 
+    // fTrackLength[i] = 0.; 
   }  
 }
 
@@ -61,15 +61,20 @@ void RunData::FillPerEvent()
   //accumulate statistic
   //
 
-  for ( G4int i=0; i<kDim; i++) {
-    // fill histograms
-    analysisManager->FillH1(i+1, fEdep[i]);
-    analysisManager->FillH1(kDim+i+1, fTrackLength[i]);
+  for (int i = 0; i < kNumCells; ++i) {
+    // analysisManager->CreateNtupleDColumn("cell_" + std::to_string(i));
+    analysisManager->FillNtupleDColumn(i, fEdep[i])
+  }
 
-    // fill ntuple
-    analysisManager->FillNtupleDColumn(i, fEdep[i]);
-    analysisManager->FillNtupleDColumn(kDim+i, fTrackLength[i]);
-  }  
+  // for ( G4int i=0; i<kDim; i++) {
+  //   // fill histograms
+  //   // analysisManager->FillH1(i+1, fEdep[i]);
+  //   // analysisManager->FillH1(kDim+i+1, fTrackLength[i]);
+
+  //   // fill ntuple
+  //   analysisManager->FillNtupleDColumn(i, fEdep[i]);
+  //   analysisManager->FillNtupleDColumn(kDim+i, fTrackLength[i]);
+  // }  
 
   analysisManager->AddNtupleRow();  
 }
@@ -78,9 +83,9 @@ void RunData::FillPerEvent()
 
 void RunData::Reset()
 { 
-  for ( G4int i=0; i<kDim; i++) {
+  for ( G4int i=0; i<kNumCells; i++) {
     fEdep[i] = 0.;
-    fTrackLength[i] = 0.; 
+    // fTrackLength[i] = 0.; 
   }  
 }
 

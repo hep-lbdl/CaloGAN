@@ -61,10 +61,10 @@ RunAction::RunAction()
   //
   
   // Creating histograms
-  analysisManager->CreateH1("1","Edep in absorber", 100, 0., 800*MeV);
-  analysisManager->CreateH1("2","Edep in gap", 100, 0., 100*MeV);
-  analysisManager->CreateH1("3","trackL in absorber", 100, 0., 1*m);
-  analysisManager->CreateH1("4","trackL in gap", 100, 0., 50*cm);
+  // analysisManager->CreateH1("1","Edep in absorber", 100, 0., 800*MeV);
+  // analysisManager->CreateH1("2","Edep in gap", 100, 0., 100*MeV);
+  // analysisManager->CreateH1("3","trackL in absorber", 100, 0., 1*m);
+  // analysisManager->CreateH1("4","trackL in gap", 100, 0., 50*cm);
 
   // Creating ntuple
   //
@@ -81,10 +81,10 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("cell_" + std::to_string(i));
   }
   
-  analysisManager->CreateNtupleDColumn("Eabs");
-  analysisManager->CreateNtupleDColumn("Egap");
-  analysisManager->CreateNtupleDColumn("Labs");
-  analysisManager->CreateNtupleDColumn("Lgap");
+  // analysisManager->CreateNtupleDColumn("Eabs");
+  // analysisManager->CreateNtupleDColumn("Egap");
+  // analysisManager->CreateNtupleDColumn("Labs");
+  // analysisManager->CreateNtupleDColumn("Lgap");
 
 
 
@@ -135,35 +135,35 @@ void RunAction::EndOfRunAction(const G4Run* /*aRun*/)
   // print histogram statistics
   //
   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
-  if ( analysisManager->GetH1(1) ) {
-    G4cout << G4endl << " ----> print histograms statistic ";
-    if(isMaster) {
-      G4cout << "for the entire run " << G4endl << G4endl; 
-    }
-    else {
-      G4cout << "for the local thread " << G4endl << G4endl; 
-    }
+  // if ( analysisManager->GetH1(1) ) {
+  //   G4cout << G4endl << " ----> print histograms statistic ";
+  //   if(isMaster) {
+  //     G4cout << "for the entire run " << G4endl << G4endl; 
+  //   }
+  //   else {
+  //     G4cout << "for the local thread " << G4endl << G4endl; 
+  //   }
     
-    G4cout << " EAbs : mean = " 
-       << G4BestUnit(analysisManager->GetH1(1)->mean(), "Energy") 
-       << " rms = " 
-       << G4BestUnit(analysisManager->GetH1(1)->rms(),  "Energy") << G4endl;
+  //   G4cout << " EAbs : mean = " 
+  //      << G4BestUnit(analysisManager->GetH1(1)->mean(), "Energy") 
+  //      << " rms = " 
+  //      << G4BestUnit(analysisManager->GetH1(1)->rms(),  "Energy") << G4endl;
     
-    G4cout << " EGap : mean = " 
-       << G4BestUnit(analysisManager->GetH1(2)->mean(), "Energy") 
-       << " rms = " 
-       << G4BestUnit(analysisManager->GetH1(2)->rms(),  "Energy") << G4endl;
+  //   G4cout << " EGap : mean = " 
+  //      << G4BestUnit(analysisManager->GetH1(2)->mean(), "Energy") 
+  //      << " rms = " 
+  //      << G4BestUnit(analysisManager->GetH1(2)->rms(),  "Energy") << G4endl;
     
-    G4cout << " LAbs : mean = " 
-      << G4BestUnit(analysisManager->GetH1(3)->mean(), "Length") 
-      << " rms = " 
-      << G4BestUnit(analysisManager->GetH1(3)->rms(),  "Length") << G4endl;
+  //   G4cout << " LAbs : mean = " 
+  //     << G4BestUnit(analysisManager->GetH1(3)->mean(), "Length") 
+  //     << " rms = " 
+  //     << G4BestUnit(analysisManager->GetH1(3)->rms(),  "Length") << G4endl;
 
-    G4cout << " LGap : mean = " 
-      << G4BestUnit(analysisManager->GetH1(4)->mean(), "Length") 
-      << " rms = " 
-      << G4BestUnit(analysisManager->GetH1(4)->rms(),  "Length") << G4endl;
-  }
+  //   G4cout << " LGap : mean = " 
+  //     << G4BestUnit(analysisManager->GetH1(4)->mean(), "Length") 
+  //     << " rms = " 
+  //     << G4BestUnit(analysisManager->GetH1(4)->rms(),  "Length") << G4endl;
+  // }
 
   // save histograms & ntuple
   //

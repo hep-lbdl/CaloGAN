@@ -39,7 +39,8 @@
 enum {
   kAbs = 0,
   kGap = 1,
-  kDim = 2
+  kDim = 2, 
+  kNumCells = 4815;
 };  
 
 ///  Run data class
@@ -61,41 +62,42 @@ public:
   RunData();
   virtual ~RunData();
 
-  void Add(G4int id, G4double de, G4double dl);
+  // void Add(G4int id, G4double de, G4double dl);
+  void Add(G4int id, G4double de);
   void FillPerEvent();
 
   void Reset();
 
   // Get methods
-  G4String  GetVolumeName(G4int id) const;
+  // G4String  GetVolumeName(G4int id) const;
   G4double  GetEdep(G4int id) const;
-  G4double  GetTrackLength(G4int id) const; 
+  // G4double  GetTrackLength(G4int id) const; 
 
 private:
-  G4String  fVolumeNames[kDim];
-  G4double  fEdep[kDim];
-  G4double  fTrackLength[kDim]; 
-  G4int     fNumCells;
+  // G4String  fVolumeNames[kDim];
+  G4double  fEdep[fNumCells];
+  // G4double  fTrackLength[kDim];
 };
 
 // inline functions
 
-inline void RunData::Add(G4int id, G4double de, G4double dl) {
+// inline void RunData::Add(G4int id, G4double de, G4double dl) {
+inline void RunData::Add(G4int id, G4double de) {
   fEdep[id] += de; 
-  fTrackLength[id] += dl;
+  // fTrackLength[id] += dl;
 }
 
-inline G4String  RunData::GetVolumeName(G4int id) const {
-  return fVolumeNames[id];
-}
+// inline G4String  RunData::GetVolumeName(G4int id) const {
+//   return fVolumeNames[id];
+// }
 
 inline G4double  RunData::GetEdep(G4int id) const {
   return fEdep[id];
 }   
 
-inline G4double  RunData::GetTrackLength(G4int id) const {
-  return fTrackLength[id];
-}
+// inline G4double  RunData::GetTrackLength(G4int id) const {
+//   return fTrackLength[id];
+// }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
