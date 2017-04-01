@@ -33,6 +33,7 @@
 
 #include "G4UserRunAction.hh"
 #include "globals.hh"
+#include <string>
 
 class G4Run;
 
