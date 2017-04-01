@@ -104,7 +104,7 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
   // Open an output file
   //
-  G4String fileName = "";
+  G4String fileName = "PLEASEWORK";
   analysisManager->OpenFile(fileName);
 }
 
