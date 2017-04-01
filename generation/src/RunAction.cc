@@ -36,6 +36,7 @@
 #include "G4RunManager.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include <sstream>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -78,7 +79,11 @@ RunAction::RunAction()
   int total_bins = 4815;
 
   for (int i = 0; i < total_bins; ++i) {
-    analysisManager->CreateNtupleDColumn("cell_" + std::to_string(i));
+
+    std::string s;
+    std::stringstream out;
+    out << i;
+    analysisManager->CreateNtupleDColumn("cell_" + out.str());
   }
   
   // analysisManager->CreateNtupleDColumn("Eabs");
