@@ -40,7 +40,7 @@ enum {
   kAbs = 0,
   kGap = 1,
   kDim = 2, 
-  kNumCells = 4815;
+  kNumCells = 4815
 };  
 
 ///  Run data class
@@ -75,7 +75,7 @@ public:
 
 private:
   // G4String  fVolumeNames[kDim];
-  G4double  fEdep[fNumCells];
+  G4double  fEdep[kNumCells];
   // G4double  fTrackLength[kDim];
 };
 
