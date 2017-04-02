@@ -154,36 +154,51 @@ if __name__ == '__main__':
     # build the discriminator
     print('Building discriminator')
     d_in = Input(shape=sizes[2:4] + [1])
-    discriminator_feat = build_discriminator(sizes[2:4])
-    features = discriminator_feat(d_in)
+    features = build_discriminator(d_in)
     primary_output = Dense(1, activation='sigmoid', name='generation')(features)
     discriminator = Model(inputs=d_in, outputs=primary_output)
+
+    # discriminator_feat = build_discriminator(sizes[2:4])
+    # features = discriminator_feat(d_in)
+    # primary_output = Dense(1, activation='sigmoid', name='generation')(features)
+    # discriminator = Model(inputs=d_in, outputs=primary_output)
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
 
-    # build the generator
-    print('Building generator')
-    #generator = build_generator(latent_size)
-    generator = build_generator(latent_size, sizes[2:4])
-    generator.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy'
-    )
+
  
     # load in previous training
     #generator.load_weights('./params_generator_epoch_099.hdf5')
 
+
+    # disc_submodel = Model(inputs=d_in, outputs=primary_output)
+    discriminator.trainable = False
+    # disc_submodel.trainable = False
+
+
+    # build the generator
+    print('Building generator')
+    #generator = build_generator(latent_size)
     latent = Input(shape=(latent_size, ), name='z')
+    gan_image = build_generator(latent, sizes[2:4])
+    generator = Model(latent, gan_image)
+    generator.compile(
+        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+        loss='binary_crossentropy'
+    )
+
+    
 
     # symbolic predict
-    gan_image = generator(latent)
+    # gan_image = generator(latent)
 
     # we only want to be able to train generation for the combined model
-    discriminator.trainable = False
+    
     # isfake = discriminator(gan_image)
     isfake = discriminator(gan_image)
+    # isfake = disc_submodel(gan_image)
     combined = Model(
         inputs=latent,
         outputs=isfake,
