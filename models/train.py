@@ -153,7 +153,8 @@ if __name__ == '__main__':
 
     # build the discriminator
     print('Building discriminator')
-    d_in, discriminator_feat = build_discriminator(sizes[2:4])
+    d_in = Input(shape=sizes[2:4] + [1])
+    discriminator_feat = build_discriminator(sizes[2:4])
     features = discriminator_feat(d_in)
     primary_output = Dense(1, activation='sigmoid', name='generation')(features)
     discriminator = Model(inputs=d_in, outputs=primary_output)
@@ -170,7 +171,7 @@ if __name__ == '__main__':
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
-
+ 
     # load in previous training
     #generator.load_weights('./params_generator_epoch_099.hdf5')
 

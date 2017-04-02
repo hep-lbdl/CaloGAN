@@ -89,7 +89,7 @@ def discriminator(img_shape):
     #aux = Dense(1, activation='sigmoid', name='auxiliary')(features)
 
     discriminator = Model(evt_image, features)#fake) #Model(image, fake) #
-    return evt_image, discriminator
+    return discriminator
 
 
 def old_discriminator():
