@@ -8,7 +8,7 @@ author: Luke de Oliveira (lukedeoliveira@lbl.gov)
 
 import keras.backend as K
 from keras.engine import InputSpec, Layer
-from keras import initializations, regularizers, constraints, activations
+from keras import initializers, regularizers, constraints, activations
 
 
 def minibatch_discriminator(x):
@@ -38,7 +38,7 @@ class Dense3D(Layer):
                  W_constraint=None, b_constraint=None,
                  bias=True, input_dim=None, **kwargs):
 
-        self.init = initializations.get(init)
+        self.init = initializers.get(init)
         self.activation = activations.get(activation)
 
         self.input_dim = input_dim
@@ -95,7 +95,7 @@ class Dense3D(Layer):
             out += self.b
         return self.activation(out)
 
-    def get_output_shape_for(self, input_shape):
+    def compute_output_shape(self, input_shape):
         assert input_shape and len(input_shape) == 2
         return (input_shape[0], self.first_dim, self.last_dim)
 
