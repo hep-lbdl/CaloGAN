@@ -15,13 +15,15 @@ except ImportError:
     import pickle
 
 import argparse
-
 from six.moves import range
 import sys
 
 from h5py import File as HDF5File
 import numpy as np
 import pandas as pd
+
+from keras.models import Model
+from keras.layers import Dense
 
 
 def bit_flip(x, prob=0.05):
@@ -84,7 +86,7 @@ if __name__ == '__main__':
     from keras.models import Model
     from keras.optimizers import Adam
     from keras.utils.generic_utils import Progbar
-    from sklearn.cross_validation import train_test_split
+    from sklearn.model_selection import train_test_split
 
     from generator import generator as build_generator
     from discriminator import discriminator as build_discriminator
@@ -100,19 +102,29 @@ if __name__ == '__main__':
 
     datafile = parse_args.dataset
 
-    d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
-    with open(datafile) as f:
-        sizes = map(int, f.readline().strip().split(","))
-    first, second, third = np.split(
-        d,
-        indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
-        axis=1
-    )
+    if '.txt' in datafile:
+        d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
+        with open(datafile) as f:
+            sizes = map(int, f.readline().strip().split(","))
+        first, second, third = np.split(
+            d,
+            indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
+            axis=1
+        )
+        # -- reshape to put them into unravelled, 2D image format
+        #first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
+        second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
+        #third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
+    elif '.hdf5' in datafile:
+        import h5py
+        d = h5py.File(datafile, 'r')
+        first = np.expand_dims(d['layer_0'][:], -1)
+        second = np.expand_dims(d['layer_1'][:], -1)
+        third = np.expand_dims(d['layer_2'][:], -1)
+        sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
+    else:
+        raise IOError('The file must be either the usual .txt or .hdf5 format')
 
-    # -- reshape to put them into unravelled, 2D image format
-    #first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
-    # second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
-    third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
 
 
     # we don't really need validation data as it's a bit meaningless for GANs,
@@ -121,7 +133,8 @@ if __name__ == '__main__':
     #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9)
     from sklearn.utils import shuffle
     #X = shuffle(first)
-    X = shuffle(third)
+    X = shuffle(second)
+    #X = shuffle(third)
 
     # tensorflow ordering
     # X_train = np.expand_dims(X_train, axis=-1)
@@ -140,7 +153,10 @@ if __name__ == '__main__':
 
     # build the discriminator
     print('Building discriminator')
-    discriminator = build_discriminator(sizes[4:])
+    d_in, discriminator_feat = build_discriminator(sizes[2:4])
+    features = discriminator_feat(d_in)
+    primary_output = Dense(1, activation='sigmoid', name='generation')(features)
+    discriminator = Model(inputs=d_in, outputs=primary_output)
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
@@ -149,7 +165,7 @@ if __name__ == '__main__':
     # build the generator
     print('Building generator')
     #generator = build_generator(latent_size)
-    generator = build_generator(latent_size, sizes[4:])
+    generator = build_generator(latent_size, sizes[2:4])
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
@@ -168,8 +184,8 @@ if __name__ == '__main__':
     # isfake = discriminator(gan_image)
     isfake = discriminator(gan_image)
     combined = Model(
-        input=latent,
-        output=isfake,
+        inputs=latent,
+        outputs=isfake,
         name='combined_model'
     )
 
