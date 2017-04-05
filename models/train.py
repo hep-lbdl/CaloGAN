@@ -165,9 +165,7 @@ if __name__ == '__main__':
     print('Building discriminator')
     input_image = Input(shape=image_shape)
 
-    discriminator_featurizer = build_discriminator(image_shape)
-
-    features = discriminator_featurizer(input_image)
+    features = build_discriminator(image_shape)(input_image)
 
     disc_output = Dense(1, activation='sigmoid', name='generation')(features)
 
@@ -188,13 +186,14 @@ if __name__ == '__main__':
     # build the generator
     print('Building generator')
     #generator = build_generator(latent_size)
-    latent = Input(shape=(latent_size, ), name='z')
+    # latent = Input(shape=(latent_size, ), name='z')
 
-    generator_model = build_generator(latent_size, image_shape)
+    # generator_model = build_generator(latent_size, image_shape)
+    generator = build_generator(latent_size, image_shape)
 
-    generated_image = generator_model(latent)
+    # generated_image = generator_model(latent)
 
-    generator = Model(latent, generated_image)
+    # generator = Model(latent, generated_image)
 
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
