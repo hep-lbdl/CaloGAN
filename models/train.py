@@ -111,7 +111,8 @@ if __name__ == '__main__':
             sizes = map(int, f.readline().strip().split(","))
         first, second, third = np.split(
             d,
-            indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
+            indices_or_sections=[sizes[0] * sizes[1],
+                                 sizes[0] * sizes[1] + sizes[2] * sizes[3]],
             axis=1
         )
         # -- reshape to put them into unravelled, 2D image format
@@ -124,11 +125,10 @@ if __name__ == '__main__':
         first = np.expand_dims(d['layer_0'][:], -1)
         second = np.expand_dims(d['layer_1'][:], -1)
         third = np.expand_dims(d['layer_2'][:], -1)
-        sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
+        sizes = [first.shape[1], first.shape[2], second.shape[
+            1], second.shape[2], third.shape[1], third.shape[2]]
     else:
         raise IOError('The file must be either the usual .txt or .hdf5 format')
-
-
 
     # we don't really need validation data as it's a bit meaningless for GANs,
     # but since we have an auxiliary task, it can be helpful to debug mode
@@ -137,13 +137,15 @@ if __name__ == '__main__':
     from sklearn.utils import shuffle
     if layer == 1:
         X = shuffle(first)
-        img_shape = sizes[:2]
+        image_shape = sizes[:2]
     elif layer == 2:
         X = shuffle(second)
-        img_shape = sizes[2:4]
+        image_shape = sizes[2:4]
     else:
         X = shuffle(third)
-        img_shape = sizes[4:]
+        image_shape = sizes[4:]
+
+    image_shape += (1, )
 
     # tensorflow ordering
     # X_train = np.expand_dims(X_train, axis=-1)
@@ -159,64 +161,63 @@ if __name__ == '__main__':
     # train_history = defaultdict(list)
     # test_history = defaultdict(list)
 
-
     # build the discriminator
     print('Building discriminator')
-    d_in = Input(shape=img_shape + [1])
-    features = build_discriminator(d_in)
-    primary_output = Dense(1, activation='sigmoid', name='generation')(features)
-    discriminator = Model(inputs=d_in, outputs=primary_output)
+    input_image = Input(shape=image_shape)
 
-    # discriminator_feat = build_discriminator(sizes[2:4])
-    # features = discriminator_feat(d_in)
-    # primary_output = Dense(1, activation='sigmoid', name='generation')(features)
-    # discriminator = Model(inputs=d_in, outputs=primary_output)
+    discriminator_featurizer = build_discriminator(image_shape)
+
+    features = discriminator_featurizer(input_image)
+
+    disc_output = Dense(1, activation='sigmoid', name='generation')(features)
+
+    discriminator = Model(inputs=input_image, outputs=disc_output)
+
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
 
-
- 
     # load in previous training
-    #generator.load_weights('./params_generator_epoch_099.hdf5')
-
+    # generator.load_weights('./params_generator_epoch_099.hdf5')
 
     # disc_submodel = Model(inputs=d_in, outputs=primary_output)
     discriminator.trainable = False
     # disc_submodel.trainable = False
 
-
     # build the generator
     print('Building generator')
     #generator = build_generator(latent_size)
     latent = Input(shape=(latent_size, ), name='z')
-    gan_image = build_generator(latent, img_shape)
-    generator = Model(latent, gan_image)
+
+    generator_model = build_generator(latent_size, image_shape)
+
+    generated_image = generator_model(latent)
+
+    generator = Model(latent, generated_image)
+
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
 
-    
-
     # symbolic predict
     # gan_image = generator(latent)
 
     # we only want to be able to train generation for the combined model
-    
+
     # isfake = discriminator(gan_image)
-    isfake = discriminator(gan_image)
+
+    combined_latent = Input(shape=(latent_size, ), name='z')
+
+    fake = discriminator(generator(combined_latent))
     # isfake = disc_submodel(gan_image)
-    combined = Model(
-        inputs=latent,
-        outputs=isfake,
-        name='combined_model'
-    )
+    combined = Model(combined_latent, fake, name='combined_model')
 
     combined.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy')
+        loss='binary_crossentropy'
+    )
 
     # MOVED ABOVE:
     # datafile = parse_args.dataset
@@ -234,7 +235,6 @@ if __name__ == '__main__':
     # first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
     # # second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
     # # third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
-
 
     # # we don't really need validation data as it's a bit meaningless for GANs,
     # # but since we have an auxiliary task, it can be helpful to debug mode
