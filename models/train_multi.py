@@ -108,7 +108,8 @@ if __name__ == '__main__':
             sizes = map(int, f.readline().strip().split(","))
         first, second, third = np.split(
             d,
-            indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
+            indices_or_sections=[sizes[0] * sizes[1],
+                                 sizes[0] * sizes[1] + sizes[2] * sizes[3]],
             axis=1
         )
         # -- reshape to put them into unravelled, 2D image format
@@ -121,15 +122,15 @@ if __name__ == '__main__':
         first = np.expand_dims(d['layer_0'][:], -1)
         second = np.expand_dims(d['layer_1'][:], -1)
         third = np.expand_dims(d['layer_2'][:], -1)
-        sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
+        sizes = [first.shape[1], first.shape[2], second.shape[
+            1], second.shape[2], third.shape[1], third.shape[2]]
     else:
         raise IOError('The file must be either the usual .txt or .hdf5 format')
-
 
     # we don't really need validation data as it's a bit meaningless for GANs,
     # but since we have an auxiliary task, it can be helpful to debug mode
     # collapse to a particularly signal or background-like image
-    #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9)
     from sklearn.utils import shuffle
     first, second, third = shuffle(first, second, third, random_state=0)
 
@@ -141,27 +142,39 @@ if __name__ == '__main__':
 
     # scale the pT levels by 100 (help neural nets w/ dynamic range - they
     # need all the help they can get)
-    first, second, third = [X.astype(np.float32) / 500 for X in [first, second, third]]
-    #X_test = X_test.astype(np.float32) / 500
+    first, second, third = [
+        X.astype(np.float32) / denom
+        for X, denom in zip([first, second, third], [500, 500, 100])
+    ]
+
+    first_shape = tuple(sizes[:2] + [1])
+    second_shape = tuple(sizes[2:4] + [1])
+    third_shape = tuple(sizes[4:] + [1])
+
+    shapes = [first_shape, second_shape, third_shape]
+    # X_test = X_test.astype(np.float32) / 500
 
     # train_history = defaultdict(list)
     # test_history = defaultdict(list)
 
-
     # build the discriminator
     print('Building discriminator')
-    d_in_1 = Input(shape=sizes[:2] + [1])
-    d_in_2 = Input(shape=sizes[2:4] + [1])
-    d_in_3 = Input(shape=sizes[4:] + [1])
-    features_1 = build_discriminator(d_in_1)
-    features_2 = build_discriminator(d_in_2)
-    features_3 = build_discriminator(d_in_3)
-    combined_output = Dense(1, activation='sigmoid', name='discr_output')(
-        merge([features_1, features_2, features_3], mode='concat'))
 
-    discriminator = Model(
-        inputs=[d_in_1, d_in_2, d_in_3],
-        outputs=combined_output)
+    input_images = map(lambda s: Input(shape=s), shapes)
+
+    # [
+    #     Input(shape=first_shape),
+    #     Input(shape=second_shape),
+    #     Input(shape=third_shape)
+    # ]
+
+    features = map(build_discriminator(image_shape), input_images)
+
+    combined_output = Dense(1, activation='sigmoid', name='discr_output')(
+        merge(features, mode='concat')
+    )
+
+    discriminator = Model(input_images, combined_output)
 
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
@@ -170,43 +183,67 @@ if __name__ == '__main__':
 
     # build the generator
     print('Building generator')
+
     latent = Input(shape=(latent_size, ), name='z')
-    #generator = build_generator(latent_size)
-    gan_image_1 = build_generator(latent, sizes[:2])
-    generator_1 = Model(latent, gan_image_1)
-    generator_1.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy'
-    )
-    gan_image_2 = build_generator(latent, sizes[2:4])
-    generator_2 = Model(latent, gan_image_2)
-    generator_2.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy'
-    )
-    gan_image_3 = build_generator(latent, sizes[4:])
-    generator_3 = Model(latent, gan_image_3)
-    generator_3.compile(
+
+    generated_images = [build_generator(latent_size, sh)(latent) for sh in shapes]
+
+    generator = Model(latent, generated_images)
+
+    generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
 
+    # latent = Input(shape=(latent_size, ), name='z')
+    # # generator = build_generator(latent_size)
+    # gan_image_1 = build_generator(latent, sizes[:2])
+    # generator_1 = Model(latent, gan_image_1)
+    # generator_1.compile(
+    #     optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+    #     loss='binary_crossentropy'
+    # )
+    # gan_image_2 = build_generator(latent, sizes[2:4])
+    # generator_2 = Model(latent, gan_image_2)
+    # generator_2.compile(
+    #     optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+    #     loss='binary_crossentropy'
+    # )
+    # gan_image_3 = build_generator(latent, sizes[4:])
+    # generator_3 = Model(latent, gan_image_3)
+    # generator_3.compile(
+    #     optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+    #     loss='binary_crossentropy'
+    # )
+
     # load in previous training
-    #generator.load_weights('./params_generator_epoch_099.hdf5')
+    # generator.load_weights('./params_generator_epoch_099.hdf5')
 
     # we only want to be able to train generation for the combined model
     discriminator.trainable = False
-    # isfake = discriminator(gan_image)
-    isfake = discriminator([gan_image_1, gan_image_2, gan_image_3])
-    combined = Model(
-        input=latent,
-        output=isfake,
-        name='combined_model'
-    )
+
+    combined_latent = Input(shape=(latent_size, ), name='z')
+
+    fake = discriminator(generator(combined_latent))
+
+    combined = Model(combined_latent, fake, name='combined_model')
 
     combined.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy')
+        loss='binary_crossentropy'
+    )
+
+    # # isfake = discriminator(gan_image)
+    # isfake = discriminator([gan_image_1, gan_image_2, gan_image_3])
+    # combined = Model(
+    #     input=latent,
+    #     output=isfake,
+    #     name='combined_model'
+    # )
+
+    # combined.compile(
+    #     optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+    #     loss='binary_crossentropy')
 
     # MOVED ABOVE:
     # datafile = parse_args.dataset
@@ -224,7 +261,6 @@ if __name__ == '__main__':
     # first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
     # # second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
     # # third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
-
 
     # # we don't really need validation data as it's a bit meaningless for GANs,
     # # but since we have an auxiliary task, it can be helpful to debug mode
@@ -268,26 +304,35 @@ if __name__ == '__main__':
             noise = np.random.normal(0, 1, (batch_size, latent_size))
 
             # get a batch of real images
-            image_batch_1 = first[index * batch_size:(index + 1) * batch_size]
-            image_batch_2 = second[index * batch_size:(index + 1) * batch_size]
-            image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
-            #label_batch = y_train[index * batch_size:(index + 1) * batch_size]
+            slc = slice(index * batch_size, (index + 1) * batch_size)
+
+            image_batch = [first[slc], second[slc], third[slc]]
+            # image_batch = [
+            #     first[],
+            #     second[index * batch_size:(index + 1) * batch_size],
+            #     third[index * batch_size:(index + 1) * batch_size]
+            # ]
+            # label_batch = y_train[index * batch_size:(index + 1) * batch_size]
 
             # sample some labels from p_c (note: we have a flat prior here, so
             # we can just sample randomly)
-            #sampled_labels = np.random.randint(0, nb_classes, batch_size)
+            # sampled_labels = np.random.randint(0, nb_classes, batch_size)
 
             # generate a batch of fake images, using the generated labels as a
             # conditioner. We reshape the sampled labels to be
             # (batch_size, 1) so that we can feed them into the embedding
             # layer as a length one sequence
-            generated_images_1 = generator_1.predict(noise, verbose=0)
-            generated_images_2 = generator_2.predict(noise, verbose=0)
-            generated_images_3 = generator_3.predict(noise, verbose=0)
+
+            generated_images = generator.predict(noise, verbose=0)
+
+            # generated_images_1 = generator_1.predict(noise, verbose=0)
+            # generated_images_2 = generator_2.predict(noise, verbose=0)
+            # generated_images_3 = generator_3.predict(noise, verbose=0)
 
             # see if the discriminator can figure itself out...
             real_batch_loss = discriminator.train_on_batch(
-                [image_batch_1, image_batch_2, image_batch_3],
+                # generated_images
+                image_batch,
                 bit_flip(np.ones(batch_size))
             )
 
@@ -295,7 +340,7 @@ if __name__ == '__main__':
             # as we have both minibatch discrimination and batch normalization, both
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
-                [generated_images_1, generated_images_2, generated_images_3],
+                generated_images,
                 bit_flip(np.ones(batch_size))
             )
 
@@ -303,7 +348,7 @@ if __name__ == '__main__':
             # print(fake_batch_loss)
             # print(real_batch_loss)
 
-            epoch_disc_loss.append((fake_batch_loss +  real_batch_loss) / 2)
+            epoch_disc_loss.append((fake_batch_loss + real_batch_loss) / 2)
 
             # we want to train the genrator to trick the discriminator
             # For the generator, we want all the {fake, real} labels to say
@@ -316,7 +361,7 @@ if __name__ == '__main__':
             # train the discriminator
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
-                #sampled_labels = np.random.randint(0, nb_classes, batch_size)
+                # sampled_labels = np.random.randint(0, nb_classes, batch_size)
 
                 gen_losses.append(combined.train_on_batch(
                     noise,
@@ -385,11 +430,7 @@ if __name__ == '__main__':
         #                      *test_history['discriminator'][-1]))
 
         # save weights every epoch
-        generator_1.save_weights('{0}{1:03d}_b1.hdf5'.format(parse_args.g_pfx, epoch),
-                               overwrite=True)
-        generator_2.save_weights('{0}{1:03d}_b2.hdf5'.format(parse_args.g_pfx, epoch),
-                               overwrite=True)
-        generator_3.save_weights('{0}{1:03d}_b3.hdf5'.format(parse_args.g_pfx, epoch),
+        generator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
                                overwrite=True)
         discriminator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
                                    overwrite=True)
