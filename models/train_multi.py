@@ -168,7 +168,9 @@ if __name__ == '__main__':
     #     Input(shape=third_shape)
     # ]
 
-    features = map(build_discriminator(image_shape), input_images)
+    features = [
+        build_discriminator(sh)(i) for sh, i in zip(shapes, input_images)
+    ]
 
     combined_output = Dense(1, activation='sigmoid', name='discr_output')(
         merge(features, mode='concat')
