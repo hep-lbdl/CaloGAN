@@ -29,22 +29,22 @@ def generator(z, img_shape, return_intermediate=False):
     # DCGAN-style project & reshape,
     #x = Dense(5 * 98 * 12, input_dim=latent_size)(z)
     #x = Reshape((5, 98, 12))(x)
-    x = Dense((img_shape[0] + 2) * (img_shape[1] + 2) * 12, name='gen_project')(z)
-    x = Reshape((img_shape[0] + 2, img_shape[1] + 2, 12), name='gen_reshape')(x)
+    x = Dense((img_shape[0] + 2) * (img_shape[1] + 2) * 12)(z)
+    x = Reshape((img_shape[0] + 2, img_shape[1] + 2, 12))(x)
 
     # block 1: (None, 5, 98, 12) => (None, 5, 98, 8),
-    x = Conv2D(8, (2, 2), padding='same', kernel_initializer='he_uniform', name='gen_conv2d')(x)
+    x = Conv2D(8, (2, 2), padding='same', kernel_initializer='he_uniform')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
     
     # block 2: (None, 5, 98, 32) => (None, 4, 97, 6),
     #ZeroPadding2D((2, 2)),
-    x = LocallyConnected2D(6, (2, 2), kernel_initializer='he_uniform', name='gen_lc2d_1')(x)
+    x = LocallyConnected2D(6, (2, 2), kernel_initializer='he_uniform')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
             
     # block 3: (None, 4, 97, 6) => (None, 3, 96, 1),
-    x = LocallyConnected2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_normal', name='gen_lc2d_2')(x)
+    x = LocallyConnected2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_normal')(x)
     y = Activation('relu')(x)
 
     return y

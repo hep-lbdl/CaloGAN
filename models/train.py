@@ -41,6 +41,8 @@ def get_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
+    parser.add_argument('--layer', action='store', type=int, default=1,
+                        help='Layer of the calorimeter to reproduce.', choices=[1, 2, 3])
     parser.add_argument('--nb-epochs', action='store', type=int, default=50,
                         help='Number of epochs to train for.')
     parser.add_argument('--batch-size', action='store', type=int, default=100,
@@ -96,6 +98,7 @@ if __name__ == '__main__':
     batch_size = parse_args.batch_size
     latent_size = parse_args.latent_size
     verbose = parse_args.prog_bar
+    layer = parse_args.layer
 
     adam_lr = parse_args.adam_lr
     adam_beta_1 = parse_args.adam_beta
@@ -112,9 +115,9 @@ if __name__ == '__main__':
             axis=1
         )
         # -- reshape to put them into unravelled, 2D image format
-        #first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
+        first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
         second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
-        #third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
+        third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
     elif '.hdf5' in datafile:
         import h5py
         d = h5py.File(datafile, 'r')
@@ -132,9 +135,15 @@ if __name__ == '__main__':
     # collapse to a particularly signal or background-like image
     #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9)
     from sklearn.utils import shuffle
-    #X = shuffle(first)
-    X = shuffle(second)
-    #X = shuffle(third)
+    if layer == 1:
+        X = shuffle(first)
+        img_shape = sizes[:2]
+    elif layer == 2:
+        X = shuffle(second)
+        img_shape = sizes[2:4]
+    else:
+        X = shuffle(third)
+        img_shape = sizes[4:]
 
     # tensorflow ordering
     # X_train = np.expand_dims(X_train, axis=-1)
@@ -153,7 +162,7 @@ if __name__ == '__main__':
 
     # build the discriminator
     print('Building discriminator')
-    d_in = Input(shape=sizes[2:4] + [1])
+    d_in = Input(shape=img_shape + [1])
     features = build_discriminator(d_in)
     primary_output = Dense(1, activation='sigmoid', name='generation')(features)
     discriminator = Model(inputs=d_in, outputs=primary_output)
@@ -182,7 +191,7 @@ if __name__ == '__main__':
     print('Building generator')
     #generator = build_generator(latent_size)
     latent = Input(shape=(latent_size, ), name='z')
-    gan_image = build_generator(latent, sizes[2:4])
+    gan_image = build_generator(latent, img_shape)
     generator = Model(latent, gan_image)
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),

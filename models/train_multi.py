@@ -102,19 +102,28 @@ if __name__ == '__main__':
     datafile = parse_args.dataset
 
     # -- read in data
-    d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
-    with open(datafile) as f:
-        sizes = map(int, f.readline().strip().split(","))
-    first, second, third = np.split(
-        d,
-        indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
-        axis=1
-    )
-
-    # -- reshape to put them into unravelled, 2D image format
-    first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
-    second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
-    third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
+    if '.txt' in datafile:
+        d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
+        with open(datafile) as f:
+            sizes = map(int, f.readline().strip().split(","))
+        first, second, third = np.split(
+            d,
+            indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
+            axis=1
+        )
+        # -- reshape to put them into unravelled, 2D image format
+        first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
+        second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
+        third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
+    elif '.hdf5' in datafile:
+        import h5py
+        d = h5py.File(datafile, 'r')
+        first = np.expand_dims(d['layer_0'][:], -1)
+        second = np.expand_dims(d['layer_1'][:], -1)
+        third = np.expand_dims(d['layer_2'][:], -1)
+        sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
+    else:
+        raise IOError('The file must be either the usual .txt or .hdf5 format')
 
 
     # we don't really need validation data as it's a bit meaningless for GANs,
@@ -141,21 +150,18 @@ if __name__ == '__main__':
 
     # build the discriminator
     print('Building discriminator')
-    d_in_1, d_model_1 = build_discriminator(sizes[:2])
-    d_in_2, d_model_2 = build_discriminator(sizes[2:4])
-    d_in_3, d_model_3 = build_discriminator(sizes[4:])
-    features_1 = d_model_1(d_in_1)
-    features_2 = d_model_2(d_in_2)
-    features_3 = d_model_3(d_in_3)
-    primary_output_1 = Dense(1, activation='sigmoid', name='discr_1')(features_1)
-    primary_output_2 = Dense(1, activation='sigmoid', name='discr_2')(features_2)
-    primary_output_3 = Dense(1, activation='sigmoid', name='discr_3')(features_3)
+    d_in_1 = Input(shape=sizes[:2] + [1])
+    d_in_2 = Input(shape=sizes[2:4] + [1])
+    d_in_3 = Input(shape=sizes[4:] + [1])
+    features_1 = build_discriminator(d_in_1)
+    features_2 = build_discriminator(d_in_2)
+    features_3 = build_discriminator(d_in_3)
     combined_output = Dense(1, activation='sigmoid', name='discr_output')(
         merge([features_1, features_2, features_3], mode='concat'))
 
     discriminator = Model(
         inputs=[d_in_1, d_in_2, d_in_3],
-        outputs=[primary_output_1, primary_output_2, primary_output_3, combined_output])
+        outputs=combined_output)
 
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
@@ -164,18 +170,22 @@ if __name__ == '__main__':
 
     # build the generator
     print('Building generator')
+    latent = Input(shape=(latent_size, ), name='z')
     #generator = build_generator(latent_size)
-    generator_1 = build_generator(latent_size, sizes[:2])
+    gan_image_1 = build_generator(latent, sizes[:2])
+    generator_1 = Model(latent, gan_image_1)
     generator_1.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
-    generator_2 = build_generator(latent_size, sizes[2:4])
+    gan_image_2 = build_generator(latent, sizes[2:4])
+    generator_2 = Model(latent, gan_image_2)
     generator_2.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
-    generator_3 = build_generator(latent_size, sizes[4:])
+    gan_image_3 = build_generator(latent, sizes[4:])
+    generator_3 = Model(latent, gan_image_3)
     generator_3.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
@@ -184,21 +194,13 @@ if __name__ == '__main__':
     # load in previous training
     #generator.load_weights('./params_generator_epoch_099.hdf5')
 
-    latent = Input(shape=(latent_size, ), name='z')
-
-    # symbolic predict
-    gan_image_1 = generator_1(latent)
-    gan_image_2 = generator_2(latent)
-    gan_image_3 = generator_3(latent)
-
-
     # we only want to be able to train generation for the combined model
     discriminator.trainable = False
     # isfake = discriminator(gan_image)
-    isfake_1, isfake_2, isfake_3, isfake_all = discriminator([gan_image_1, gan_image_2, gan_image_3])
+    isfake = discriminator([gan_image_1, gan_image_2, gan_image_3])
     combined = Model(
         input=latent,
-        output=[isfake_1, isfake_2, isfake_3, isfake_all], #isfake,
+        output=isfake,
         name='combined_model'
     )
 
@@ -286,7 +288,7 @@ if __name__ == '__main__':
             # see if the discriminator can figure itself out...
             real_batch_loss = discriminator.train_on_batch(
                 [image_batch_1, image_batch_2, image_batch_3],
-                [bit_flip(np.ones(batch_size)), bit_flip(np.ones(batch_size)), bit_flip(np.ones(batch_size)), bit_flip(np.ones(batch_size))]
+                bit_flip(np.ones(batch_size))
             )
 
             # note that a given batch should have either *only* real or *only* fake,
@@ -294,14 +296,14 @@ if __name__ == '__main__':
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
                 [generated_images_1, generated_images_2, generated_images_3],
-                [bit_flip(np.ones(batch_size)), bit_flip(np.ones(batch_size)), bit_flip(np.ones(batch_size)), bit_flip(np.ones(batch_size))]
+                bit_flip(np.ones(batch_size))
             )
 
             # TODO: why are there 5 numbers if there are only 4 outputs???
             # print(fake_batch_loss)
             # print(real_batch_loss)
 
-            epoch_disc_loss.append((sum(fake_batch_loss) + sum(real_batch_loss)) / 2)
+            epoch_disc_loss.append((fake_batch_loss +  real_batch_loss) / 2)
 
             # we want to train the genrator to trick the discriminator
             # For the generator, we want all the {fake, real} labels to say
@@ -318,7 +320,7 @@ if __name__ == '__main__':
 
                 gen_losses.append(combined.train_on_batch(
                     noise,
-                    [trick, trick, trick, trick]
+                    trick
                 ))
 
             epoch_gen_loss.append(np.mean(gen_losses))
