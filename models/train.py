@@ -218,6 +218,20 @@ if __name__ == '__main__':
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy')
 
+    generator_weights = 'params_generator_init_layer{}.hdf5'.format(layer)
+    discriminator_weights = 'params_discriminator_init_layer{}.hdf5'.format(layer)
+    try:
+        generator.load_weights(generator_weights)
+        print('Generator weights loaded from ' + generator_weights)
+    except IOError:
+        print('No generator weights found in ' + generator_weights)
+
+    try:
+        discriminator.load_weights(discriminator_weights)
+        print('Discriminator weights loaded from ' + discriminator_weights)
+    except IOError:
+        print('No discriminator weights found in ' + discriminator_weights)
+
     # MOVED ABOVE:
     # datafile = parse_args.dataset
 
@@ -386,9 +400,9 @@ if __name__ == '__main__':
         #                      *test_history['discriminator'][-1]))
 
         # save weights every epoch
-        generator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
+        generator.save_weights('{0}{1:03d}_layer{2}.hdf5'.format(parse_args.g_pfx, epoch, layer),
                                overwrite=True)
-        discriminator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
+        discriminator.save_weights('{0}{1:03d}_layer{2}.hdf5'.format(parse_args.d_pfx, epoch, layer),
                                    overwrite=True)
 
     # pickle.dump({'train': train_history, 'test': test_history},
