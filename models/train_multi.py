@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-file: train.py
-description: training script for [arXiv/1701.05927]
-author: Luke de Oliveira (lukedeoliveira@lbl.gov)
 """
 
 from __future__ import print_function
@@ -118,9 +115,9 @@ if __name__ == '__main__':
     elif '.hdf5' in datafile:
         import h5py
         d = h5py.File(datafile, 'r')
-        first = np.expand_dims(d['layer_0'][:], -1)
-        second = np.expand_dims(d['layer_1'][:], -1)
-        third = np.expand_dims(d['layer_2'][:], -1)
+        first = np.expand_dims(d['layer_0'][:1000], -1)
+        second = np.expand_dims(d['layer_1'][:1000], -1)
+        third = np.expand_dims(d['layer_2'][:1000], -1)
         sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
     else:
         raise IOError('The file must be either the usual .txt or .hdf5 format')
@@ -208,6 +205,10 @@ if __name__ == '__main__':
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy')
 
+    # generator_1.load_weights('../weights/params_generator_init_layer1.hdf5')
+    # generator_2.load_weights('../weights/params_generator_init_layer2.hdf5')
+    # generator_3.load_weights('../weights/params_generator_init_layer3.hdf5')
+    # discriminator.load_weights('../weights/params_discriminator_epoch_037.hdf5')
     # MOVED ABOVE:
     # datafile = parse_args.dataset
 
@@ -296,7 +297,7 @@ if __name__ == '__main__':
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
                 [generated_images_1, generated_images_2, generated_images_3],
-                bit_flip(np.ones(batch_size))
+                bit_flip(np.zeros(batch_size))
             )
 
             # TODO: why are there 5 numbers if there are only 4 outputs???
