@@ -128,9 +128,9 @@ if __name__ == '__main__':
     elif '.hdf5' in datafile:
         import h5py
         d = h5py.File(datafile, 'r')
-        first = np.expand_dims(d['layer_0'][:1000], -1)
-        second = np.expand_dims(d['layer_1'][:1000], -1)
-        third = np.expand_dims(d['layer_2'][:1000], -1)
+        first = np.expand_dims(d['layer_0'][:10000], -1)
+        second = np.expand_dims(d['layer_1'][:10000], -1)
+        third = np.expand_dims(d['layer_2'][:10000], -1)
         sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
     else:
         raise IOError('The file must be either the usual .txt or .hdf5 format')
@@ -202,26 +202,29 @@ if __name__ == '__main__':
         vspace_dim = 10
 
         # creates the kernel space for the minibatch discrimination
-        K_x = Dense3D(nb_features, vspace_dim)(out)#(h)#(out)
+#        K_x = Dense3D(nb_features, vspace_dim)(out)#(h)#(out)
 
-        minibatch_featurizer = Lambda(minibatch_discriminator,
-                                  output_shape=minibatch_output_shape)
+#        minibatch_featurizer = Lambda(minibatch_discriminator,
+#                                  output_shape=minibatch_output_shape)
 
+        features.append(out)
         # concat the minibatch features with the normal ones
-        features.append( 
-            merge(
-                [
-                    minibatch_featurizer(K_x),
-                    out #h
-                ],
-                mode='concat'
-            )
-        )
+#        features.append( 
+#            merge(
+#                [
+#                    minibatch_featurizer(K_x),
+#                    out #h
+#                ],
+#                mode='concat'
+#            )
+#        )
 
     combined_output = Dense(1, activation='sigmoid', name='discr_output')(
-        Dense(64, activation='relu')(
-            Dense(64, activation='relu')(
-                merge(features, mode='concat'))))
+        LeakyReLU()(
+            Dense(64)(
+                LeakyReLU()(
+                    Dense(128)(
+                        merge(features, mode='concat'))))))
 
     discriminator = Model(
         inputs=discr_inputs,
@@ -303,6 +306,8 @@ if __name__ == '__main__':
            show_shapes=True,
            show_layer_names=True)
 
+    discriminator.load_weights('./test_params_discriminator_epoch_049.hdf5')
+    generator.load_weights('./test_params_generator_epoch_049.hdf5')
     # # train_history = defaultdict(list)
     # # test_history = defaultdict(list)
 
@@ -358,7 +363,7 @@ if __name__ == '__main__':
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
                 generated_images,
-                #bit_flip(np.ones(batch_size))
+                #bit_flip(np.zeros(batch_size))
                 np.zeros(batch_size) #????
             )
 
