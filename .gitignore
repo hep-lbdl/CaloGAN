@@ -1,3 +1,6 @@
+# images
+*.png
+
 # hdf5 files
 *.hdf
 *.h5
@@ -93,3 +96,4 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
