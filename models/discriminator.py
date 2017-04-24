@@ -72,16 +72,16 @@ def discriminator(image):
     vspace_dim = 10
 
     # creates the kernel space for the minibatch discrimination
-    K_x = Dense3D(nb_features, vspace_dim)(h)#(out)
+    #    K_x = Dense3D(nb_features, vspace_dim)(h)#(out)
 
-    minibatch_featurizer = Lambda(minibatch_discriminator,
-                              output_shape=minibatch_output_shape)
+    #    minibatch_featurizer = Lambda(minibatch_discriminator,
+    #                              output_shape=minibatch_output_shape)
 
     # concat the minibatch features with the normal ones
-    features = merge([
-            minibatch_featurizer(K_x),
-            h
-            ], mode='concat')
+    #    features = merge([
+    #            minibatch_featurizer(K_x),
+    #            h
+    #            ], mode='concat')
 
     # fake output tracks binary fake / not-fake, and the auxiliary requires
     # reconstruction of latent features, in this case, labels
@@ -90,7 +90,8 @@ def discriminator(image):
 
     #discriminator = Model(evt_image, features)#fake) #Model(image, fake) #
     # inp = Input(shape=image.output_shape)
-    m = Model(image, features)
+    #   m = Model(image, features)
+    m = Model(image, h)
     return m(image)
     # return features #discriminator
 
