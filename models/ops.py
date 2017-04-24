@@ -26,73 +26,93 @@ def minibatch_output_shape(input_shape):
     return tuple(shape[:2])
 
 
+def single_layer_energy(x):
+    shape = K.get_variable_shape(x)
+    return K.reshape(K.sum(x, axis=range(1, len(shape))), (-1, 1))
+
+
+def single_layer_energy_output_shape(input_shape):
+    shape = list(input_shape)
+    # assert len(shape) == 3
+    return (shape[0], 1)
+
+
+def threshold_indicator(x, thresh):
+    return K.cast(x > thresh, K.floatx())
+
+
+def sparsity_level(x):
+    _shape = K.get_variable_shape(x)
+    shape = K.shape(x)
+    total = K.cast(K.prod(shape[1:]), K.floatx())
+    return K.reshape(K.sum(K.cast(x > 0.0, K.floatx()), axis=range(1, len(_shape))), (-1, 1)) / total
+
+
+def sparsity_output_shape(input_shape):
+    shape = list(input_shape)
+    # assert len(shape) == 3  # only valid for 3D tensors
+    return (shape[0], 1)
+
+
 class Dense3D(Layer):
 
     """
     A 3D, trainable, dense tensor product layer
     """
 
-    def __init__(self, first_dim, last_dim, init='glorot_uniform',
-                 activation=None, weights=None,
-                 W_regularizer=None, b_regularizer=None, activity_regularizer=None,
-                 W_constraint=None, b_constraint=None,
-                 bias=True, input_dim=None, **kwargs):
-
-        self.init = initializers.get(init)
-        self.activation = activations.get(activation)
-
-        self.input_dim = input_dim
+    def __init__(self, first_dim,
+                 last_dim,
+                 activation=None,
+                 use_bias=True,
+                 kernel_initializer='glorot_uniform',
+                 bias_initializer='zeros',
+                 kernel_regularizer=None,
+                 bias_regularizer=None,
+                 activity_regularizer=None,
+                 kernel_constraint=None,
+                 bias_constraint=None,
+                 **kwargs):
+        if 'input_shape' not in kwargs and 'input_dim' in kwargs:
+            kwargs['input_shape'] = (kwargs.pop('input_dim'),)
+        super(Dense3D, self).__init__(**kwargs)
         self.first_dim = first_dim
         self.last_dim = last_dim
-
-        self.W_regularizer = regularizers.get(W_regularizer)
-        self.b_regularizer = regularizers.get(b_regularizer)
+        self.activation = activations.get(activation)
+        self.use_bias = use_bias
+        self.kernel_initializer = initializers.get(kernel_initializer)
+        self.bias_initializer = initializers.get(bias_initializer)
+        self.kernel_regularizer = regularizers.get(kernel_regularizer)
+        self.bias_regularizer = regularizers.get(bias_regularizer)
         self.activity_regularizer = regularizers.get(activity_regularizer)
-
-        self.W_constraint = constraints.get(W_constraint)
-        self.b_constraint = constraints.get(b_constraint)
-
-        self.bias = bias
-        self.initial_weights = weights
-        self.input_spec = [InputSpec(ndim=2)]
-
-        if self.input_dim:
-            kwargs['input_shape'] = (self.input_dim,)
-        super(Dense3D, self).__init__(**kwargs)
+        self.kernel_constraint = constraints.get(kernel_constraint)
+        self.bias_constraint = constraints.get(bias_constraint)
+        self.input_spec = InputSpec(min_ndim=2)
+        self.supports_masking = True
 
     def build(self, input_shape):
-        assert len(input_shape) == 2
-        input_dim = input_shape[1]
-        self.input_spec = [InputSpec(dtype=K.floatx(),
-                                     shape=(None, input_dim))]
+        assert len(input_shape) >= 2
+        input_dim = input_shape[-1]
 
-        self.W = self.add_weight(
-            (self.first_dim, input_dim, self.last_dim),
-            initializer=self.init,
-            name='{}_W'.format(self.name),
-            regularizer=self.W_regularizer,
-            constraint=self.W_constraint
-        )
-        if self.bias:
-            self.b = self.add_weight(
-                (self.first_dim, self.last_dim),
-                initializer='zero',
-                name='{}_b'.format(self.name),
-                regularizer=self.b_regularizer,
-                constraint=self.b_constraint
-            )
+        self.kernel = self.add_weight(shape=(self.first_dim, input_dim, self.last_dim),
+                                      initializer=self.kernel_initializer,
+                                      name='kernel',
+                                      regularizer=self.kernel_regularizer,
+                                      constraint=self.kernel_constraint)
+        if self.use_bias:
+            self.bias = self.add_weight(shape=(self.first_dim, self.last_dim),
+                                        initializer=self.bias_initializer,
+                                        name='bias',
+                                        regularizer=self.bias_regularizer,
+                                        constraint=self.bias_constraint)
         else:
-            self.b = None
-
-        if self.initial_weights is not None:
-            self.set_weights(self.initial_weights)
-            del self.initial_weights
+            self.bias = None
+        self.input_spec = InputSpec(min_ndim=2, axes={-1: input_dim})
         self.built = True
 
-    def call(self, x, mask=None):
-        out = K.reshape(K.dot(x, self.W), (-1, self.first_dim, self.last_dim))
-        if self.bias:
-            out += self.b
+    def call(self, inputs, mask=None):
+        out = K.reshape(K.dot(inputs, self.kernel), (-1, self.first_dim, self.last_dim))
+        if self.use_bias:
+            out += self.bias
         return self.activation(out)
 
     def compute_output_shape(self, input_shape):
@@ -103,15 +123,15 @@ class Dense3D(Layer):
         config = {
             'first_dim': self.first_dim,
             'last_dim': self.last_dim,
-            'init': self.init.__name__,
-            'activation': self.activation.__name__,
-            'W_regularizer': self.W_regularizer.get_config() if self.W_regularizer else None,
-            'b_regularizer': self.b_regularizer.get_config() if self.b_regularizer else None,
-            'activity_regularizer': self.activity_regularizer.get_config() if self.activity_regularizer else None,
-            'W_constraint': self.W_constraint.get_config() if self.W_constraint else None,
-            'b_constraint': self.b_constraint.get_config() if self.b_constraint else None,
-            'bias': self.bias,
-            'input_dim': self.input_dim
+            'activation': activations.serialize(self.activation),
+            'use_bias': self.use_bias,
+            'kernel_initializer': initializers.serialize(self.kernel_initializer),
+            'bias_initializer': initializers.serialize(self.bias_initializer),
+            'kernel_regularizer': regularizers.serialize(self.kernel_regularizer),
+            'bias_regularizer': regularizers.serialize(self.bias_regularizer),
+            'activity_regularizer': regularizers.serialize(self.activity_regularizer),
+            'kernel_constraint': constraints.serialize(self.kernel_constraint),
+            'bias_constraint': constraints.serialize(self.bias_constraint)
         }
-        base_config = super(Dense3D, self).get_config()
+        base_config = super(Dense, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
