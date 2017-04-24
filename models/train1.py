@@ -15,7 +15,7 @@ import argparse
 from six.moves import range
 import sys
 from itertools import izip
-
+import yaml
 
 from h5py import File as HDF5File
 import numpy as np
@@ -46,14 +46,14 @@ def bit_flip(x, prob=0.05):
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        description='Run CalGAN training.'
+        description='Run CalGAN training. '
         'Sensible defaults come from [arXiv/1511.06434]',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
     parser.add_argument('--nb-epochs', action='store', type=int, default=50,
                         help='Number of epochs to train for.')
-    parser.add_argument('--batch-size', action='store', type=int, default=100,
+    parser.add_argument('--batch-size', action='store', type=int, default=200,
                         help='batch size per update')
     parser.add_argument('--latent-size', action='store', type=int, default=500,
                         help='size of random N(0, 1) latent space to sample')
@@ -66,7 +66,7 @@ def get_parser():
                         help='Adam beta_1 parameter')
 
     parser.add_argument('--dataset', action='store', type=str,
-                        help='txt file')
+                        help='yaml file with particles and hdf paths')
 
     parser.add_argument('--prog-bar', action='store_true',
                         help='Whether or not to use a progress bar')
@@ -110,53 +110,77 @@ if __name__ == '__main__':
     adam_lr = parse_args.adam_lr
     adam_beta_1 = parse_args.adam_beta
 
-    datafile = parse_args.dataset
+    yaml_file = parse_args.dataset
 
     # -- read in data
-    if '.txt' in datafile:
-        d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
-        with open(datafile) as f:
-            sizes = map(int, f.readline().strip().split(","))
-        first, second, third = np.split(
-            d,
-            indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
-            axis=1
-        )
-        # -- reshape to put them into unravelled, 2D image format
-        first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
-        second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
-        third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
-    elif '.hdf5' in datafile:
-        import h5py
-        d = h5py.File(datafile, 'r')
-        first = np.expand_dims(d['layer_0'][:1000], -1)
-        second = np.expand_dims(d['layer_1'][:1000], -1)
-        third = np.expand_dims(d['layer_2'][:1000], -1)
-        sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
-    else:
-        raise IOError('The file must be either the usual .txt or .hdf5 format')
+    with open(yaml_file, 'r') as stream:
+        try:
+            s = yaml.load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    nb_classes = len(s.keys())
+    print('{} particle types found: {}'.format(nb_classes, s.keys()))
 
+    #for particle, datafile in s.iteritems():
+    def _load_data(particle, datafile):
+        if '.txt' in datafile:
+            d = pd.read_csv(datafile, delimiter=",", header=None, skiprows=1).values
+            with open(datafile) as f:
+                sizes = map(int, f.readline().strip().split(","))
+            first, second, third = np.split(
+                d,
+                indices_or_sections=[sizes[0]*sizes[1], sizes[0]*sizes[1] + sizes[2]*sizes[3]],
+                axis=1
+            )
+            # -- reshape to put them into unravelled, 2D image format
+            first = np.expand_dims(first.reshape(-1, sizes[0], sizes[1]), -1)
+            second = np.expand_dims(second.reshape(-1, sizes[2], sizes[3]), -1)
+            third = np.expand_dims(third.reshape(-1, sizes[4], sizes[5]), -1)
+            y = [particle] * d.shape[0]
+        elif '.hdf5' in datafile:
+            import h5py
+            d = h5py.File(datafile, 'r')
+            first = np.expand_dims(d['layer_0'][:500], -1)
+            second = np.expand_dims(d['layer_1'][:500], -1)
+            third = np.expand_dims(d['layer_2'][:500], -1)
+            sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
+            y = [particle] * first.shape[0]
+        else:
+            raise IOError('The file must be either the usual .txt or .hdf5 format')
+        return first, second, third, y, sizes
 
-    # we don't really need validation data as it's a bit meaningless for GANs,
-    # but since we have an auxiliary task, it can be helpful to debug mode
-    # collapse to a particularly signal or background-like image
-    #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9)
-    from sklearn.utils import shuffle
-    first, second, third = shuffle(first, second, third, random_state=0)
+    first, second, third, y, sizes = [
+        np.concatenate(t) for t in [
+            a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
+        ]
+    ]
+    # TO-DO: check that all sizes match, so I could be taking any of them
+    sizes = sizes[:6].tolist()
 
-    # tensorflow ordering
-    # X_train = np.expand_dims(X_train, axis=-1)
-    # X_test = np.expand_dims(X_test, axis=-1)
-
-    # nb_train, nb_test = X_train.shape[0], X_test.shape[0]
+    ###################################
+    # preprocessing
 
     # scale the pT levels by 100 (help neural nets w/ dynamic range - they
     # need all the help they can get)
     first, second, third = [X.astype(np.float32) / 500 for X in [first, second, third]]
-    #X_test = X_test.astype(np.float32) / 500
 
-    # train_history = defaultdict(list)
-    # test_history = defaultdict(list)
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+    y = le.fit_transform(y)
+    from sklearn.utils import shuffle
+    first, second, third, y = shuffle(first, second, third, y, random_state=0)
+    # we don't really need validation data as it's a bit meaningless for GANs,
+    # but since we have an auxiliary task, it can be helpful to debug mode
+    # collapse to a particularly signal or background-like image
+    first_train, first_test,\
+    second_train, second_test,\
+    third_train, third_test,\
+    y_train, y_test = train_test_split(first, second, third, y, train_size=0.9)
+
+    nb_train, nb_test = y_train.shape[0], y_test.shape[0]
+
+    train_history = defaultdict(list)
+    test_history = defaultdict(list)
 
     ###################################
     # build the discriminator
@@ -220,20 +244,30 @@ if __name__ == '__main__':
 #            )
 #        )
 
-    combined_output = Dense(1, activation='sigmoid', name='discr_output')(
-        LeakyReLU()(
+    p =  LeakyReLU()(
             Dense(64)(
                 LeakyReLU()(
                     Dense(128)(
-                        merge(features, mode='concat'))))))
+                        merge(features, mode='concat')))))
+
+    fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
+    aux = Dense(1, activation='sigmoid', name='auxiliary_output')(p)
 
     discriminator = Model(
         inputs=discr_inputs,
-        outputs=combined_output)
+        outputs=[fake, aux])
+
+    if nb_classes == 2:
+        aux_loss = 'binary_crossentropy'
+    else:
+        aux_loss = 'sparse_categorical_crossentropy'
 
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy'
+        loss={
+            'fakereal_output' : 'binary_crossentropy',
+            'auxiliary_output' : aux_loss
+        }
     )
 
     plot_model(discriminator,
@@ -252,8 +286,15 @@ if __name__ == '__main__':
         return izip(a, a)
 
     outputs = []
+    # this will be our label
+    image_class = Input(shape=(1, ), dtype='int32')
+    emb = Flatten()(Embedding(nb_classes, latent_size, input_length=1,
+                              embeddings_initializer='glorot_normal')(image_class))
+    # hadamard product between z-space and a class conditional embedding
+    h = merge([latent, emb], mode='mul')
+
     for img_shape in _pairwise(sizes):
-        x = Dense((img_shape[0] + 2) * (img_shape[1] + 2) * 12)(latent)
+        x = Dense((img_shape[0] + 2) * (img_shape[1] + 2) * 12)(h)
         x = Reshape((img_shape[0] + 2, img_shape[1] + 2, 12))(x)
         # block 1: (None, 5, 98, 12) => (None, 5, 98, 8),
         x = Conv2D(8, (2, 2), padding='same', kernel_initializer='he_uniform')(x)
@@ -269,7 +310,7 @@ if __name__ == '__main__':
         y = Activation('relu')(x)
         outputs.append(y)
 
-    generator = Model(inputs=latent, outputs=outputs)
+    generator = Model(inputs=[latent, image_class], outputs=outputs)
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
@@ -287,10 +328,10 @@ if __name__ == '__main__':
     # we only want to be able to train generation for the combined model
     discriminator.trainable = False
     # isfake = discriminator(gan_image)
-    isfake = discriminator(outputs)
+    isfake, isreal = discriminator(outputs)
     combined = Model(
-        input=latent,
-        output=isfake,
+        inputs=[latent, image_class],
+        outputs=[isfake, isreal],
         name='combined_model'
     )
     combined.compile(
@@ -310,9 +351,6 @@ if __name__ == '__main__':
     # discriminator.load_weights('./test_params_discriminator_epoch_049.hdf5')
     # generator.load_weights('./test_params_generator_epoch_049.hdf5')
 
-    # # train_history = defaultdict(list)
-    # # test_history = defaultdict(list)
-
     ###################################
     # training procedure
     for epoch in range(nb_epochs):
@@ -325,7 +363,7 @@ if __name__ == '__main__':
         epoch_gen_loss = []
         epoch_disc_loss = []
 
-        for index in range(nb_batches):
+        for index in range(nb_batches - 1):
             if verbose:
                 progress_bar.update(index)
             else:
@@ -336,28 +374,27 @@ if __name__ == '__main__':
             noise = np.random.normal(0, 1, (batch_size, latent_size))
 
             # get a batch of real images
-            image_batch_1 = first[index * batch_size:(index + 1) * batch_size]
-            image_batch_2 = second[index * batch_size:(index + 1) * batch_size]
-            image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
-            #label_batch = y_train[index * batch_size:(index + 1) * batch_size]
+            image_batch_1 = first_train[index * batch_size:(index + 1) * batch_size]
+            image_batch_2 = second_train[index * batch_size:(index + 1) * batch_size]
+            image_batch_3 = third_train[index * batch_size:(index + 1) * batch_size]
+            label_batch = y_train[index * batch_size:(index + 1) * batch_size]
 
             # sample some labels from p_c (note: we have a flat prior here, so
             # we can just sample randomly)
-            #sampled_labels = np.random.randint(0, nb_classes, batch_size)
+            sampled_labels = np.random.randint(0, nb_classes, batch_size)
 
             # generate a batch of fake images, using the generated labels as a
             # conditioner. We reshape the sampled labels to be
             # (batch_size, 1) so that we can feed them into the embedding
             # layer as a length one sequence
-            generated_images = generator.predict(noise, verbose=0)
-            # generated_images_2 = generator_2.predict(noise, verbose=0)
-            # generated_images_3 = generator_3.predict(noise, verbose=0)
+            generated_images = generator.predict(
+                [noise, sampled_labels.reshape((-1, 1))], verbose=0)
 
             # see if the discriminator can figure itself out...
             real_batch_loss = discriminator.train_on_batch(
                 [image_batch_1, image_batch_2, image_batch_3],
                 #bit_flip(np.ones(batch_size))
-                np.ones(batch_size)
+                [np.ones(batch_size), label_batch.reshape(-1, 1)]
             )
 
             # note that a given batch should have either *only* real or *only* fake,
@@ -366,13 +403,13 @@ if __name__ == '__main__':
             fake_batch_loss = discriminator.train_on_batch(
                 generated_images,
                 #bit_flip(np.zeros(batch_size))
-                np.zeros(batch_size) #????
+                [np.zeros(batch_size), sampled_labels]
             )
 
             # print(fake_batch_loss)
             # print(real_batch_loss)
 
-            epoch_disc_loss.append((fake_batch_loss +  real_batch_loss) / 2)
+            epoch_disc_loss.append((np.array(fake_batch_loss) +  np.array(real_batch_loss)) / 2)
 
             # we want to train the genrator to trick the discriminator
             # For the generator, we want all the {fake, real} labels to say
@@ -385,32 +422,32 @@ if __name__ == '__main__':
             # train the discriminator
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
-                #sampled_labels = np.random.randint(0, nb_classes, batch_size)
-
+                sampled_labels = np.random.randint(0, nb_classes, batch_size)
                 gen_losses.append(combined.train_on_batch(
-                    noise,
-                    trick
+                    [noise, sampled_labels.reshape(-1, 1)],
+                    [trick, sampled_labels.reshape(-1, 1)]
                 ))
 
-            epoch_gen_loss.append(np.mean(gen_losses))
+            epoch_gen_loss.append(np.mean(np.array(gen_losses), axis=0))
 
         print('=' * 60)
-        print('    Generator loss: {}'.format(np.mean(epoch_gen_loss)))
-        print('Discriminator loss: {}'.format(np.mean(epoch_disc_loss)))
+        print('    Generator loss: {}'.format(np.mean(epoch_gen_loss, axis=0)))
+        print('Discriminator loss: {}'.format(np.mean(epoch_disc_loss, axis=0)))
         print('=' * 60)
+
         # print('\nTesting for epoch {}:'.format(epoch + 1))
 
         # # generate a new batch of noise
         # noise = np.random.normal(0, 1, (nb_test, latent_size))
 
         # # sample some labels from p_c and generate images from them
-        # #sampled_labels = np.random.randint(0, nb_classes, nb_test)
+        # sampled_labels = np.random.randint(0, nb_classes, nb_test)
         # generated_images = generator.predict(
         #     noise, verbose=False)
 
-        # # X = np.concatenate((X_test, generated_images))
+        # X = np.concatenate((X_test, generated_images))
         # y = np.array([1] * nb_test + [0] * nb_test)
-        # # aux_y = np.concatenate((y_test, sampled_labels), axis=0)
+        # aux_y = np.concatenate((y_test, sampled_labels), axis=0)
 
         # # see if the discriminator can figure itself out...
         # discriminator_test_loss = discriminator.evaluate(
