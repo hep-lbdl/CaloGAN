@@ -140,9 +140,9 @@ if __name__ == '__main__':
         elif '.hdf5' in datafile:
             import h5py
             d = h5py.File(datafile, 'r')
-            first = np.expand_dims(d['layer_0'][:500], -1)
-            second = np.expand_dims(d['layer_1'][:500], -1)
-            third = np.expand_dims(d['layer_2'][:500], -1)
+            first = np.expand_dims(d['layer_0'][:], -1)
+            second = np.expand_dims(d['layer_1'][:], -1)
+            third = np.expand_dims(d['layer_2'][:], -1)
             sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
             y = [particle] * first.shape[0]
         else:
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     first_train, first_test,\
     second_train, second_test,\
     third_train, third_test,\
-    y_train, y_test = train_test_split(first, second, third, y, train_size=0.9)
+    y_train, y_test = train_test_split(first, second, third, y, train_size=0.99)
 
     nb_train, nb_test = y_train.shape[0], y_test.shape[0]
 
@@ -336,7 +336,8 @@ if __name__ == '__main__':
     )
     combined.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy')
+        loss=['binary_crossentropy', aux_loss]
+    )
 
     # plot_model(discriminator,
     #            to_file='discriminator2.png',
@@ -348,22 +349,22 @@ if __name__ == '__main__':
            show_shapes=True,
            show_layer_names=True)
 
-    # discriminator.load_weights('./test_params_discriminator_epoch_049.hdf5')
-    # generator.load_weights('./test_params_generator_epoch_049.hdf5')
+    discriminator.load_weights('./params_discriminator_epoch_011.hdf5')
+    generator.load_weights('./params_generator_epoch_011.hdf5')
 
     ###################################
     # training procedure
     for epoch in range(nb_epochs):
         print('Epoch {} of {}'.format(epoch + 1, nb_epochs))
 
-        nb_batches = int(first.shape[0] / batch_size)
+        nb_batches = int(y_train.shape[0] / batch_size)
         if verbose:
             progress_bar = Progbar(target=nb_batches)
 
         epoch_gen_loss = []
         epoch_disc_loss = []
 
-        for index in range(nb_batches - 1):
+        for index in range(nb_batches):
             if verbose:
                 progress_bar.update(index)
             else:
@@ -393,8 +394,7 @@ if __name__ == '__main__':
             # see if the discriminator can figure itself out...
             real_batch_loss = discriminator.train_on_batch(
                 [image_batch_1, image_batch_2, image_batch_3],
-                #bit_flip(np.ones(batch_size))
-                [np.ones(batch_size), label_batch.reshape(-1, 1)]
+                [bit_flip(np.ones(batch_size)), bit_flip(label_batch.reshape(-1, 1))]
             )
 
             # note that a given batch should have either *only* real or *only* fake,
@@ -402,8 +402,7 @@ if __name__ == '__main__':
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
                 generated_images,
-                #bit_flip(np.zeros(batch_size))
-                [np.zeros(batch_size), sampled_labels]
+                [bit_flip(np.zeros(batch_size)), bit_flip(sampled_labels)]
             )
 
             # print(fake_batch_loss)
