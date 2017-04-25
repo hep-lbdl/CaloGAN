@@ -89,13 +89,8 @@ if __name__ == '__main__':
     from keras.optimizers import Adam
     from keras.utils.generic_utils import Progbar
     from sklearn.model_selection import train_test_split
-
-    # from generator import generator as build_generator
-    # from discriminator import discriminator as build_discriminator
-
     from painter import layer_0_generator as build_generator
     from painter import layer_0_discriminator as build_discriminator
-
     # batch, latent size, and whether or not to be verbose with a progress bar
     nb_epochs = parse_args.nb_epochs
     batch_size = parse_args.batch_size
@@ -168,7 +163,8 @@ if __name__ == '__main__':
     print('Building discriminator')
     input_image = Input(shape=image_shape)
 
-    featurizer = build_discriminator(image_shape)
+    # featurizer = build_discriminator(image_shape)
+    featurizer = build_discriminator()
     features = featurizer(input_image)
 
     disc_output = Dense(1, activation='sigmoid', name='generation')(features)
@@ -195,9 +191,9 @@ if __name__ == '__main__':
     # generator_model = build_generator(latent_size, image_shape)
     generator = build_generator(latent_size, image_shape)
 
-    # generated_image = generator_model(latent)
+# generated_image = generator_model(latent)
 
-    # generator = Model(latent, generated_image)
+# generator = Model(latent, generated_image)
 
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
