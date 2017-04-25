@@ -179,8 +179,8 @@ if __name__ == '__main__':
 
     nb_train, nb_test = y_train.shape[0], y_test.shape[0]
 
-    train_history = defaultdict(list)
-    test_history = defaultdict(list)
+    # train_history = defaultdict(list)
+    # test_history = defaultdict(list)
 
     ###################################
     # build the discriminator
@@ -336,7 +336,10 @@ if __name__ == '__main__':
     )
     combined.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss='binary_crossentropy')
+        loss={
+            'fakereal_output' : 'binary_crossentropy',
+            'auxiliary_output' : aux_loss
+        })
 
     # plot_model(discriminator,
     #            to_file='discriminator2.png',
