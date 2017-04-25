@@ -91,7 +91,7 @@ if __name__ == '__main__':
     from sklearn.model_selection import train_test_split
     from painter import layer_0_generator as build_generator
     from painter import layer_0_discriminator as build_discriminator
-    # batch, latent size, and whether or not to be verbose with a progress bar
+# batch, latent size, and whether or not to be verbose with a progress bar
     nb_epochs = parse_args.nb_epochs
     batch_size = parse_args.batch_size
     latent_size = parse_args.latent_size
@@ -190,7 +190,6 @@ if __name__ == '__main__':
 
     # generator_model = build_generator(latent_size, image_shape)
     generator = build_generator(latent_size, image_shape)
-
 # generated_image = generator_model(latent)
 
 # generator = Model(latent, generated_image)
