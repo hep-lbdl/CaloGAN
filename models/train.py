@@ -26,7 +26,7 @@ from keras.models import Model
 from keras.layers import Dense
 
 
-def bit_flip(x, prob=0.05):
+def bit_flip(x, prob=0.02):
     """ flips a int array's values with some probability """
     x = np.array(x)
     selection = np.random.uniform(0, 1, x.shape) < prob
@@ -90,8 +90,11 @@ if __name__ == '__main__':
     from keras.utils.generic_utils import Progbar
     from sklearn.model_selection import train_test_split
 
-    from generator import generator as build_generator
-    from discriminator import discriminator as build_discriminator
+    # from generator import generator as build_generator
+    # from discriminator import discriminator as build_discriminator
+
+    from painter import layer_0_generator as build_generator
+    from painter import layer_0_discriminator as build_discriminator
 
     # batch, latent size, and whether or not to be verbose with a progress bar
     nb_epochs = parse_args.nb_epochs
@@ -187,14 +190,14 @@ if __name__ == '__main__':
     # build the generator
     print('Building generator')
     #generator = build_generator(latent_size)
-    latent = Input(shape=(latent_size, ), name='z')
+    # latent = Input(shape=(latent_size, ), name='z')
 
-    generator_model = build_generator(latent_size, image_shape)
-    # generator = build_generator(latent_size, image_shape)
+    # generator_model = build_generator(latent_size, image_shape)
+    generator = build_generator(latent_size, image_shape)
 
-    generated_image = generator_model(latent)
+    # generated_image = generator_model(latent)
 
-    generator = Model(latent, generated_image)
+    # generator = Model(latent, generated_image)
 
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
@@ -208,7 +211,7 @@ if __name__ == '__main__':
 
     # isfake = discriminator(gan_image)
 
-    combined_latent = Input(shape=(latent_size, ), name='z')
+    combined_latent = Input(shape=(latent_size, ), name='combined_z')
 
     fake = discriminator(generator(combined_latent))
     # isfake = disc_submodel(gan_image)
