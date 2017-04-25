@@ -30,6 +30,9 @@ from keras.layers.local import LocallyConnected2D
 from keras.models import Model, Sequential
 from keras.layers.advanced_activations import LeakyReLU
 from keras.utils import plot_model
+from ops import (minibatch_discriminator, minibatch_output_shape, Dense3D,
+                 single_layer_energy, single_layer_energy_output_shape,
+                 sparsity_level, sparsity_output_shape)
 
 K.set_image_dim_ordering('tf')
 
@@ -140,9 +143,9 @@ if __name__ == '__main__':
         elif '.hdf5' in datafile:
             import h5py
             d = h5py.File(datafile, 'r')
-            first = np.expand_dims(d['layer_0'][:], -1)
-            second = np.expand_dims(d['layer_1'][:], -1)
-            third = np.expand_dims(d['layer_2'][:], -1)
+            first = np.expand_dims(d['layer_0'][:10000], -1)
+            second = np.expand_dims(d['layer_1'][:10000], -1)
+            third = np.expand_dims(d['layer_2'][:10000], -1)
             sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
             y = [particle] * first.shape[0]
         else:
@@ -232,7 +235,7 @@ if __name__ == '__main__':
 #        minibatch_featurizer = Lambda(minibatch_discriminator,
 #                                  output_shape=minibatch_output_shape)
 
-        features.append(out)
+        #features.append(out)
         # concat the minibatch features with the normal ones
 #        features.append( 
 #            merge(
@@ -243,6 +246,33 @@ if __name__ == '__main__':
 #                mode='concat'
 #            )
 #        )
+
+    # creates the kernel space for the minibatch discrimination
+
+        minibatch_featurizer = Lambda(minibatch_discriminator,
+                                  output_shape=minibatch_output_shape)
+
+#        energy_detector = Lambda(single_layer_energy, single_layer_energy_output_shape)
+        sparsity_detector = Lambda(sparsity_level, sparsity_output_shape)
+
+#        energy = energy_detector(image)
+        sparsity = sparsity_detector(image)
+
+#        K_x = Dense3D(nb_features, vspace_dim)(out)
+#        K_energy = Dense3D(nb_features, vspace_dim)(energy)
+#        K_sparsity = Dense3D(nb_features, vspace_dim)(sparsity)
+
+        # concat the minibatch features with the normal ones
+        f = merge([
+#            minibatch_featurizer(K_x),
+#            minibatch_featurizer(K_energy),
+#            minibatch_featurizer(K_sparsity),
+            out,
+ #           energy,
+            sparsity
+        ], mode='concat')
+        features.append(f)
+
 
     p =  LeakyReLU()(
             Dense(64)(
@@ -349,8 +379,8 @@ if __name__ == '__main__':
            show_shapes=True,
            show_layer_names=True)
 
-    discriminator.load_weights('./params_discriminator_epoch_011.hdf5')
-    generator.load_weights('./params_generator_epoch_011.hdf5')
+#    discriminator.load_weights('./params_discriminator_epoch_000.hdf5')
+#    generator.load_weights('./params_generator_epoch_000.hdf5')
 
     ###################################
     # training procedure
