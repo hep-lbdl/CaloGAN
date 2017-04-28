@@ -50,3 +50,34 @@ def generator(z, img_shape, return_intermediate=False):
     return y
     
     # return Model(z, y)
+
+def multistream_generator(sizes, latent_size):
+    from itertools import izip
+
+    latent = Input(shape=(latent_size, ), name='z')
+
+    def _pairwise(iterable):
+        '''s -> (s0, s1), (s2, s3), (s4, s5), ...'''
+        a = iter(iterable)
+        return izip(a, a)
+
+    outputs = []
+    for img_shape in _pairwise(sizes):
+        x = Dense((img_shape[0] + 2) * (img_shape[1] + 2) * 12)(latent)
+        x = Reshape((img_shape[0] + 2, img_shape[1] + 2, 12))(x)
+        # block 1: (None, 5, 98, 12) => (None, 5, 98, 8),
+        x = Conv2D(8, (2, 2), padding='same', kernel_initializer='he_uniform')(x)
+        x = LeakyReLU()(x)
+        x = BatchNormalization()(x)
+        # block 2: (None, 5, 98, 32) => (None, 4, 97, 6),
+        #ZeroPadding2D((2, 2)),
+        x = LocallyConnected2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+        x = LeakyReLU()(x)
+        x = BatchNormalization()(x)
+        # block 3: (None, 4, 97, 6) => (None, 3, 96, 1),
+        x = LocallyConnected2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_normal')(x)
+        y = Activation('relu')(x)
+        outputs.append(y)
+
+    generator = Model(inputs=latent, outputs=outputs)
+    return generator

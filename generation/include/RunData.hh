@@ -65,17 +65,20 @@ public:
   // void Add(G4int id, G4double de, G4double dl);
   void Add(G4int id, G4double de);
   void FillPerEvent();
-
+  
   void Reset();
 
   // Get methods
   // G4String  GetVolumeName(G4int id) const;
   G4double  GetEdep(G4int id) const;
+  G4double GetTotalEnergy(){return TotalEnergy;};
+  void SetTotalEnergy(G4double e){TotalEnergy = e;};
   // G4double  GetTrackLength(G4int id) const; 
 
 private:
   // G4String  fVolumeNames[kDim];
   G4double  fEdep[kNumCells];
+  G4double TotalEnergy;
   // G4double  fTrackLength[kDim];
 };
 

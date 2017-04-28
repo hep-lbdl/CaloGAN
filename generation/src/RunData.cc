@@ -65,6 +65,7 @@ void RunData::FillPerEvent()
     // analysisManager->CreateNtupleDColumn("cell_" + std::to_string(i));
     analysisManager->FillNtupleDColumn(i, fEdep[i]);
   }
+  analysisManager->FillNtupleDColumn(kNumCells, GetTotalEnergy());
 
   // for ( G4int i=0; i<kDim; i++) {
   //   // fill histograms

@@ -33,6 +33,8 @@
 
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "globals.hh"
+#include "G4GeneralParticleSource.hh"
+
 
 class G4ParticleGun;
 class G4Event;
@@ -57,6 +59,7 @@ public:
 
 private:
   G4ParticleGun*  fParticleGun; // G4 particle gun
+  G4GeneralParticleSource * m_particleSource;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
