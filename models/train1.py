@@ -143,9 +143,9 @@ if __name__ == '__main__':
         elif '.hdf5' in datafile:
             import h5py
             d = h5py.File(datafile, 'r')
-            first = np.expand_dims(d['layer_0'][:10000], -1)
-            second = np.expand_dims(d['layer_1'][:10000], -1)
-            third = np.expand_dims(d['layer_2'][:10000], -1)
+            first = np.expand_dims(d['layer_0'][:], -1)
+            second = np.expand_dims(d['layer_1'][:], -1)
+            third = np.expand_dims(d['layer_2'][:], -1)
             sizes = [first.shape[1], first.shape[2], second.shape[1], second.shape[2], third.shape[1], third.shape[2]]
             y = [particle] * first.shape[0]
         else:
@@ -191,6 +191,7 @@ if __name__ == '__main__':
     discr_inputs = [Input(shape=sizes[:2] + [1]), Input(shape=sizes[2:4] + [1]), Input(shape=sizes[4:] + [1])]
     #discr_inputs_middle = [Input(shape=sizes[:2] + [1]), Input(shape=sizes[2:4] + [1]), Input(shape=sizes[4:] + [1])]
     features = []
+    sparsities = []
     # for image, image_middle in zip(discr_inputs, discr_inputs_middle):
     for image in discr_inputs:
         x = Conv2D(32, (2, 2), padding='same')(image)
@@ -235,7 +236,7 @@ if __name__ == '__main__':
 #        minibatch_featurizer = Lambda(minibatch_discriminator,
 #                                  output_shape=minibatch_output_shape)
 
-        #features.append(out)
+        features.append(out)
         # concat the minibatch features with the normal ones
 #        features.append( 
 #            merge(
@@ -249,29 +250,29 @@ if __name__ == '__main__':
 
     # creates the kernel space for the minibatch discrimination
 
-        minibatch_featurizer = Lambda(minibatch_discriminator,
-                                  output_shape=minibatch_output_shape)
+#        minibatch_featurizer = Lambda(minibatch_discriminator,
+#                                  output_shape=minibatch_output_shape)
 
 #        energy_detector = Lambda(single_layer_energy, single_layer_energy_output_shape)
         sparsity_detector = Lambda(sparsity_level, sparsity_output_shape)
 
 #        energy = energy_detector(image)
         sparsity = sparsity_detector(image)
-
+        sparsities.append(sparsity)
 #        K_x = Dense3D(nb_features, vspace_dim)(out)
 #        K_energy = Dense3D(nb_features, vspace_dim)(energy)
 #        K_sparsity = Dense3D(nb_features, vspace_dim)(sparsity)
 
         # concat the minibatch features with the normal ones
-        f = merge([
+#        f = merge([
 #            minibatch_featurizer(K_x),
 #            minibatch_featurizer(K_energy),
 #            minibatch_featurizer(K_sparsity),
-            out,
+#            out,
  #           energy,
-            sparsity
-        ], mode='concat')
-        features.append(f)
+#            sparsity
+#        ], mode='concat')
+#        features.append(f)
 
 
     p =  LeakyReLU()(
@@ -280,6 +281,7 @@ if __name__ == '__main__':
                     Dense(128)(
                         merge(features, mode='concat')))))
 
+    p = merge(sparsities + [p], mode='concat')
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
     aux = Dense(1, activation='sigmoid', name='auxiliary_output')(p)
 
@@ -367,6 +369,7 @@ if __name__ == '__main__':
     combined.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss=['binary_crossentropy', aux_loss]
+        
     )
 
     # plot_model(discriminator,
@@ -424,7 +427,8 @@ if __name__ == '__main__':
             # see if the discriminator can figure itself out...
             real_batch_loss = discriminator.train_on_batch(
                 [image_batch_1, image_batch_2, image_batch_3],
-                [bit_flip(np.ones(batch_size)), bit_flip(label_batch.reshape(-1, 1))]
+                [np.ones(batch_size), bit_flip(label_batch.reshape(-1, 1), 0.1)],
+                [np.ones(batch_size), 0.25 * np.ones(batch_size)] # weights
             )
 
             # note that a given batch should have either *only* real or *only* fake,
@@ -432,7 +436,8 @@ if __name__ == '__main__':
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
                 generated_images,
-                [bit_flip(np.zeros(batch_size)), bit_flip(sampled_labels)]
+                [np.zeros(batch_size), bit_flip(sampled_labels, 0.1)],
+                [np.ones(batch_size), 0.25 * np.ones(batch_size)] # weights
             )
 
             # print(fake_batch_loss)
@@ -454,7 +459,8 @@ if __name__ == '__main__':
                 sampled_labels = np.random.randint(0, nb_classes, batch_size)
                 gen_losses.append(combined.train_on_batch(
                     [noise, sampled_labels.reshape(-1, 1)],
-                    [trick, sampled_labels.reshape(-1, 1)]
+                    [trick, bit_flip(sampled_labels.reshape(-1, 1), 0.1)],
+                    [np.ones(len(trick)), 0.25 * np.ones(len(trick))] # weights
                 ))
 
             epoch_gen_loss.append(np.mean(np.array(gen_losses), axis=0))
