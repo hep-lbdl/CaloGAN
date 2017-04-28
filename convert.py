@@ -29,12 +29,14 @@ def write_out_file(infile, outfile, tree=None):
     assert len(cells) == sum(map(np.prod, LAYER_SPECS)) + OVERFLOW_BINS
 
     X = pd.DataFrame(tree2array(T, branches=cells)).values
+    E = pd.DataFrame(tree2array(T, branches=['TotalEnergy'])).values.ravel()
 
     with HDF5File(outfile, 'w') as h5:
         for layer, (sh, (l, u)) in enumerate(zip(LAYER_SPECS, LAYER_DIV)):
             h5['layer_{}'.format(layer)] = X[:, l:u].reshape((-1, ) + sh)
 
         h5['overflow'] = X[:, -OVERFLOW_BINS:]
+        h5['energy'] = E.reshape(-1, 1)
 
 if __name__ == '__main__':
     import argparse
