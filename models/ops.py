@@ -9,6 +9,22 @@ author: Luke de Oliveira (lukedeoliveira@lbl.gov)
 import keras.backend as K
 from keras.engine import InputSpec, Layer
 from keras import initializers, regularizers, constraints, activations
+from keras.layers import Lambda
+
+
+def scale(x, v):
+    return Lambda(lambda _: _ / v)(x)
+
+
+def energy_error(requested_energy, recieved_energy):
+    difference = (recieved_energy - requested_energy) / 10000
+
+    over_energized = K.cast(difference > 0., K.floatx())
+
+    too_high = 100 * K.abs(difference)
+    too_low = 10 * K.abs(difference)
+
+    return over_energized * too_high + (1 - over_energized) * too_low
 
 
 def minibatch_discriminator(x):
@@ -35,6 +51,10 @@ def single_layer_energy_output_shape(input_shape):
     shape = list(input_shape)
     # assert len(shape) == 3
     return (shape[0], 1)
+
+
+def calculate_energy(x):
+    return Lambda(single_layer_energy, single_layer_energy_output_shape)(x)
 
 
 def threshold_indicator(x, thresh):
@@ -93,17 +113,21 @@ class Dense3D(Layer):
         assert len(input_shape) >= 2
         input_dim = input_shape[-1]
 
-        self.kernel = self.add_weight(shape=(self.first_dim, input_dim, self.last_dim),
-                                      initializer=self.kernel_initializer,
-                                      name='kernel',
-                                      regularizer=self.kernel_regularizer,
-                                      constraint=self.kernel_constraint)
+        self.kernel = self.add_weight(
+            shape=(self.first_dim, input_dim, self.last_dim),
+            initializer=self.kernel_initializer,
+            name='kernel',
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint
+        )
         if self.use_bias:
-            self.bias = self.add_weight(shape=(self.first_dim, self.last_dim),
-                                        initializer=self.bias_initializer,
-                                        name='bias',
-                                        regularizer=self.bias_regularizer,
-                                        constraint=self.bias_constraint)
+            self.bias = self.add_weight(
+                shape=(self.first_dim, self.last_dim),
+                initializer=self.bias_initializer,
+                name='bias',
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint
+            )
         else:
             self.bias = None
         self.input_spec = InputSpec(min_ndim=2, axes={-1: input_dim})
