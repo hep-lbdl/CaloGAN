@@ -29,8 +29,8 @@ from keras.layers.convolutional import (UpSampling2D, Conv2D, ZeroPadding2D,
 from keras.layers.local import LocallyConnected2D
 from keras.models import Model, Sequential
 from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.merge import concatenate, multiply
-#from keras.utils import plot_model
+from keras.layers.merge import concatenate, multiply, add
+# from keras.utils import plot_model
 from keras.losses import mean_absolute_error as _mean_absolute_error
 from ops import (minibatch_discriminator, minibatch_output_shape, Dense3D,
                  single_layer_energy, single_layer_energy_output_shape,
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     #     }
     # )
 
-    #plot_model(discriminator,
+    # plot_model(discriminator,
     #           to_file='discriminator.png',
     #           show_shapes=True,
     #           show_layer_names=True)
@@ -340,10 +340,17 @@ if __name__ == '__main__':
     img_layer1 = build_generator(h, 12, 12)
     img_layer2 = build_generator(h, 12, 6)
 
+    # inpainting
+    zero2one = AveragePooling2D(pool_size=(1, 8))(
+        UpSampling2D(size=(4, 1))(img_layer0))
+    final_img_layer1 = add([zero2one, img_layer1])
+    one2two = AveragePooling2D(pool_size=(1, 2))(final_img_layer1)
+    final_img_layer2 = add([one2two, img_layer2])
+
     generator_outputs = [
         Activation('relu')(img_layer0),
-        Activation('relu')(img_layer1),
-        Activation('relu')(img_layer2)
+        Activation('relu')(final_img_layer1),#(img_layer1),
+        Activation('relu')(final_img_layer2)#(img_layer2)
     ]
 
     generator = Model(generator_inputs, generator_outputs)
@@ -352,12 +359,12 @@ if __name__ == '__main__':
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
-    #plot_model(
+    # plot_model(
     #    generator,
     #    to_file='generator.png',
     #    show_shapes=True,
     #    show_layer_names=True
-    #)
+    # )
 
     # load in previous training
     # generator.load_weights('./params_generator_epoch_099.hdf5')
