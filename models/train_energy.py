@@ -30,7 +30,7 @@ from keras.layers.local import LocallyConnected2D
 from keras.models import Model, Sequential
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.merge import concatenate, multiply
-from keras.utils import plot_model
+#from keras.utils import plot_model
 from keras.losses import mean_absolute_error as _mean_absolute_error
 from ops import (minibatch_discriminator, minibatch_output_shape, Dense3D,
                  single_layer_energy, single_layer_energy_output_shape,
@@ -124,16 +124,16 @@ if __name__ == '__main__':
     adam_lr = parse_args.adam_lr
     adam_beta_1 = parse_args.adam_beta
 
-    # yaml_file = parse_args.dataset
+    yaml_file = parse_args.dataset
 
-    # # -- read in data
-    # with open(yaml_file, 'r') as stream:
-    #     try:
-    #         s = yaml.load(stream)
-    #     except yaml.YAMLError as exc:
-    #         print(exc)
-    # nb_classes = len(s.keys())
-    # print('{} particle types found: {}'.format(nb_classes, s.keys()))
+    # -- read in data
+    with open(yaml_file, 'r') as stream:
+        try:
+            s = yaml.load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    nb_classes = len(s.keys())
+    print('{} particle types found: {}'.format(nb_classes, s.keys()))
 
     # for particle, datafile in s.iteritems():
     def _load_data(particle, datafile):
@@ -150,16 +150,16 @@ if __name__ == '__main__':
 
         return first, second, third, y, energy, sizes
 
-    # first, second, third, y, energy, sizes = [
-    #     np.concatenate(t) for t in [
-    #         a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
-    #     ]
-    # ]
+    first, second, third, y, energy, sizes = [
+        np.concatenate(t) for t in [
+            a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
+        ]
+    ]
 
-    first, second, third, _, energy, sizes = _load_data(None, parse_args.dataset)
+    #first, second, third, _, energy, sizes = _load_data(None, parse_args.dataset)
 
     # TO-DO: check that all sizes match, so I could be taking any of them
-    # sizes = sizes[:6].tolist()
+    sizes = sizes[:6].tolist()
 
     ###################################
     # preprocessing
@@ -168,22 +168,23 @@ if __name__ == '__main__':
     # need all the help they can get)
     # first, second, third = [X.astype(np.float32) / 500 for X in [first, second, third]]
     first, second, third, energy = [
-        (X.astype(np.float32) / 1000)[:10000]
+        (X.astype(np.float32) / 1000)[:100000]
         for X in [first, second, third, energy]
     ]
+    y = y[:100000]
 
     # energy between 2 and 200 now
 
-    # from sklearn.preprocessing import LabelEncoder
-    # le = LabelEncoder()
-    # y = le.fit_transform(y)
-    # from sklearn.utils import shuffle
-    # first, second, third, y, energy = shuffle(
-    #     first, second, third, y, energy, random_state=0)
-
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+    y = le.fit_transform(y)
     from sklearn.utils import shuffle
-    first, second, third, energy = shuffle(
-        first, second, third, energy, random_state=0)
+    first, second, third, y, energy = shuffle(
+        first, second, third, y, energy, random_state=0)
+
+    #from sklearn.utils import shuffle
+    #first, second, third, energy = shuffle(
+    #    first, second, third, energy, random_state=0)
     # we don't really need validation data as it's a bit meaningless for GANs,
     # but since we have an auxiliary task, it can be helpful to debug mode
     # collapse to a particularly signal or background-like image
@@ -200,10 +201,14 @@ if __name__ == '__main__':
     # build the discriminator
     print('Building discriminator')
 
-    calorimeter = [Input(shape=(3, 96, 1)),
-                   Input(shape=(12, 12, 1)),
-                   Input(shape=(12, 6, 1))]
+#    calorimeter = [Input(shape=(3, 96, 1)),
+#                   Input(shape=(12, 12, 1)),
+#                   Input(shape=(12, 6, 1))]
 
+    calorimeter = [Input(shape=sizes[:2] + [1]),
+                   Input(shape=sizes[2:4] + [1]),
+                   Input(shape=sizes[4:] + [1])]
+    
     input_energy = Input(shape=(1, ))
 
     features = []
@@ -225,7 +230,8 @@ if __name__ == '__main__':
 
     # calculate the total energy across all rows
     total_energy = Lambda(
-        lambda x: K.reshape(K.sum(x, axis=-1), (-1, 1))
+        lambda x: K.reshape(K.sum(x, axis=-1), (-1, 1)),
+        name='total_energy'
     )(energies)
 
     nb_features = 10
@@ -254,6 +260,16 @@ if __name__ == '__main__':
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
+    discriminator_outputs = [fake, total_energy]
+    discriminator_losses = ['binary_crossentropy', mean_absolute_error(1 / 5.)]
+    if nb_classes > 1: # acgan
+        aux = Dense(1, activation='sigmoid', name='auxiliary_output')(p)
+        discriminator_outputs.append(aux)
+        if nb_classes > 2:
+            discriminator_losses.append('sparse_categorical_crossentropy')
+        else:
+            discriminator_losses.append('binary_crossentropy')
+
     # fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
 
     # discriminator = Model(
@@ -264,11 +280,11 @@ if __name__ == '__main__':
     # discriminator = Model(calorimeter, fake)
 
     # discriminator = Model(calorimeter + [input_energy], fake)
-    discriminator = Model(calorimeter + [input_energy], [fake, total_energy])
+    discriminator = Model(calorimeter + [input_energy], discriminator_outputs)
 
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss=['binary_crossentropy', mean_absolute_error(1 / 5.)]
+        loss=discriminator_losses
         # loss=['binary_crossentropy', energy_error]
     )
 
@@ -285,34 +301,35 @@ if __name__ == '__main__':
     #     }
     # )
 
-    plot_model(discriminator,
-               to_file='discriminator.png',
-               show_shapes=True,
-               show_layer_names=True)
+    #plot_model(discriminator,
+    #           to_file='discriminator.png',
+    #           show_shapes=True,
+    #           show_layer_names=True)
 
     ###################################
     # build the generator
     print('Building generator')
     latent = Input(shape=(latent_size, ), name='z')
-
+    input_energy = Input(shape=(1, ), dtype='float32')
+    generator_inputs = [latent, input_energy]
     def _pairwise(iterable):
         '''s -> (s0, s1), (s2, s3), (s4, s5), ...'''
         a = iter(iterable)
         return izip(a, a)
 
     output_layers = []
-    # # this will be our label
-    # image_class = Input(shape=(1, ), dtype='int32')
-    # emb = Flatten()(Embedding(nb_classes, latent_size, input_length=1,
-    #                           embeddings_initializer='glorot_normal')(image_class))
-    # # hadamard product between z-space and a class conditional embedding
-    # h = merge([latent, emb], mode='mul')
-
-    input_energy = Input(shape=(1, ), dtype='float32')
+    if nb_classes > 1: #acgan
+        image_class = Input(shape=(1, ), dtype='int32') # label
+        emb = Flatten()(Embedding(nb_classes, latent_size, input_length=1,
+                                  embeddings_initializer='glorot_normal')(image_class))
+        # hadamard product between z-space and a class conditional embedding
+        hc = merge([latent, emb], mode='mul')
+        h = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
+        generator_inputs.append(image_class)
+    else:
+        h = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
 
     # h = concatenate([latent, input_energy])
-
-    h = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
 
     # emb = Flatten()(Embedding(nb_classes, latent_size, input_length=1,
     #                           embeddings_initializer='glorot_normal')(image_class))
@@ -323,24 +340,24 @@ if __name__ == '__main__':
     img_layer1 = build_generator(h, 12, 12)
     img_layer2 = build_generator(h, 12, 6)
 
-    outputs = [
+    generator_outputs = [
         Activation('relu')(img_layer0),
         Activation('relu')(img_layer1),
         Activation('relu')(img_layer2)
     ]
 
-    generator = Model([latent, input_energy], outputs)
+    generator = Model(generator_inputs, generator_outputs)
 
     generator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
-    plot_model(
-        generator,
-        to_file='generator.png',
-        show_shapes=True,
-        show_layer_names=True
-    )
+    #plot_model(
+    #    generator,
+    #    to_file='generator.png',
+    #    show_shapes=True,
+    #    show_layer_names=True
+    #)
 
     # load in previous training
     # generator.load_weights('./params_generator_epoch_099.hdf5')
@@ -354,25 +371,26 @@ if __name__ == '__main__':
     # by_layer_energy = Input(shape=(3, ))
     # isfake = discriminator(generator([latent, input_energy]))
     # isfake, aux_energy = discriminator(generator([latent, input_energy]))
-    isfake, aux_energy = discriminator(generator([latent, input_energy]) + [input_energy])
+    # isfake, aux_energy = discriminator(generator(generator_inputs) + [input_energy])
+    combined_outputs =  discriminator(generator(generator_inputs) + [input_energy]) 
 
     combined = Model(
-        inputs=[latent, input_energy],
+        inputs=generator_inputs,
         # outputs=[isfake, ,
-        outputs=[isfake, aux_energy],
+        outputs=combined_outputs,
         name='combined_model'
     )
     combined.compile(
         optimizer=Adam(lr=1.2 * adam_lr, beta_1=adam_beta_1),
-        loss=['binary_crossentropy', mean_absolute_error(1 / 5.)]
+        loss=discriminator_losses
         # loss=['binary_crossentropy', energy_error]
 
     )
 
-    plot_model(combined,
-               to_file='combined.png',
-               show_shapes=True,
-               show_layer_names=True)
+   # plot_model(combined,
+   #            to_file='combined.png',
+    #           show_shapes=True,
+     #          show_layer_names=True)
 
 #    discriminator.load_weights('./params_discriminator_epoch_000.hdf5')
 #    generator.load_weights('./params_generator_epoch_000.hdf5')
@@ -409,28 +427,37 @@ if __name__ == '__main__':
             image_batch_1 = first[index * batch_size:(index + 1) * batch_size]
             image_batch_2 = second[index * batch_size:(index + 1) * batch_size]
             image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
-            # label_batch = y[index * batch_size:(index + 1) * batch_size]
+            label_batch = y[index * batch_size:(index + 1) * batch_size]
             energy_batch = energy[index * batch_size:(index + 1) * batch_size]
 
             # energy_breakdown
 
             # sample some labels from p_c (note: we have a flat prior here, so
             # we can just sample randomly)
-            # sampled_labels = np.random.randint(0, nb_classes, batch_size)
+            sampled_labels = np.random.randint(0, nb_classes, batch_size)
             sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
 
             # generate a batch of fake images, using the generated labels as a
             # conditioner. We reshape the sampled labels to be
             # (batch_size, 1) so that we can feed them into the embedding
             # layer as a length one sequence
-            generated_images = generator.predict([noise, sampled_energies], verbose=0)
+            generator_inputs = [noise, sampled_energies]
+            if nb_classes > 1:
+                generator_inputs.append(sampled_labels)
+            generated_images = generator.predict(generator_inputs, verbose=0)
             # [noise, sampled_labels.reshape((-1, 1))], verbose=0)
 
             # see if the discriminator can figure itself out...
+            discriminator_outputs_real = [np.ones(batch_size), energy_batch]
+            discriminator_outputs_fake = [np.zeros(batch_size), sampled_energies]
+            if nb_classes > 1:
+                discriminator_outputs_real.append(label_batch)
+                discriminator_outputs_fake.append(sampled_labels)
             real_batch_loss = discriminator.train_on_batch(
                 [image_batch_1, image_batch_2, image_batch_3, energy_batch],
+                discriminator_outputs_real
                 # np.ones(batch_size)
-                [np.ones(batch_size), energy_batch]
+                #[np.ones(batch_size), energy_batch]
                 # [np.ones(batch_size), 0.25 * np.ones(batch_size)]  # weights
             )
 
@@ -439,8 +466,9 @@ if __name__ == '__main__':
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
                 generated_images + [sampled_energies],
+                discriminator_outputs_fake
                 # np.zeros(batch_size)
-                [np.zeros(batch_size), sampled_energies],
+                #[np.zeros(batch_size), sampled_energies],
                 # [np.ones(batch_size), 0.25 * np.ones(batch_size)]  # weights
             )
 
@@ -461,12 +489,19 @@ if __name__ == '__main__':
             # train the discriminator
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
-                # sampled_labels = np.random.randint(0, nb_classes, batch_size)
+                sampled_labels = np.random.randint(0, nb_classes, batch_size)
                 sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
+                combined_inputs = [noise, sampled_energies]
+                combined_outputs = [trick, sampled_energies]
+                if nb_classes > 1:
+                    combined_inputs.append(sampled_labels)
+                    combined_outputs.append(sampled_labels)
                 gen_losses.append(combined.train_on_batch(
+                    combined_inputs,
+                    combined_outputs
                     # [noise, sampled_labels.reshape(-1, 1)],
-                    [noise, sampled_energies],
-                    [trick, sampled_energies],
+                    #[noise, sampled_energies],
+                    #[trick, sampled_energies],
                     # trick,
                     # [trick, bit_flip(sampled_labels.reshape(-1, 1), 0.1)],
                     # [np.ones(len(trick)), 0.25 * np.ones(len(trick))]  # weights
