@@ -25,6 +25,12 @@ def sparse_softmax(x):
     e = K.exp(x - K.max(x, axis=(1, 2, 3), keepdims=True))
     s = K.sum(e, axis=(1, 2, 3), keepdims=True)
     return e / s
+
+
+def channel_softmax(x):
+    e = K.exp(x - K.max(x, axis=-1, keepdims=True))
+    s = K.sum(e, axis=-1, keepdims=True)
+    return e / s
     # s = K.sum(x, axis=(1, 2, 3), keepdims=True)
     # return x / K.clip(s, K.epsilon(), None)
 
