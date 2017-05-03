@@ -9,11 +9,42 @@ author: Luke de Oliveira (lukedeoliveira@lbl.gov)
 import keras.backend as K
 from keras.engine import InputSpec, Layer
 from keras import initializers, regularizers, constraints, activations
-from keras.layers import Lambda
+from keras.layers import Lambda, ZeroPadding2D, LocallyConnected2D
+from keras.layers.merge import concatenate, multiply
+
+from architectures import channel_softmax
+
+import numpy as np
 
 
 def scale(x, v):
     return Lambda(lambda _: _ / v)(x)
+
+
+def inpainting_attention(primary, carryover, constant=-10):
+
+    def _initialize_bias(const=-5):
+        def _(shape, dtype=None):
+            assert len(shape) == 3, 'must be a 3D shape'
+            x = np.zeros(shape)
+            x[:, :, -1] = const
+            return x
+        return _
+
+    x = concatenate([primary, carryover], axis=-1)
+    h = ZeroPadding2D((1, 1))(x)
+    lcn = LocallyConnected2D(
+        filters=2,
+        kernel_size=(3, 3),
+        bias_initializer=_initialize_bias(constant)
+    )
+
+    h = lcn(h)
+    weights = Lambda(channel_softmax)(h)
+
+    channel_sum = Lambda(K.sum, arguments={'axis': -1, 'keepdims': True})
+
+    return channel_sum(multiply([x, weights]))
 
 
 def energy_error(requested_energy, recieved_energy):
