@@ -261,7 +261,7 @@ if __name__ == '__main__':
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
     discriminator_outputs = [fake, total_energy]
-    discriminator_losses = ['binary_crossentropy', mean_absolute_error(1 / 5.)]
+    discriminator_losses = ['binary_crossentropy', mean_absolute_error(1)]
     if nb_classes > 1:  # acgan
         aux = Dense(1, activation='sigmoid', name='auxiliary_output')(p)
         discriminator_outputs.append(aux)
@@ -461,12 +461,15 @@ if __name__ == '__main__':
             # see if the discriminator can figure itself out...
             discriminator_outputs_real = [np.ones(batch_size), energy_batch]
             discriminator_outputs_fake = [np.zeros(batch_size), sampled_energies]
+            loss_weights = [np.ones(batch_size), 0.2 * np.ones(batch_size)]
             if nb_classes > 1:
                 discriminator_outputs_real.append(label_batch)
-                discriminator_outputs_fake.append(sampled_labels)
+                discriminator_outputs_fake.append(bit_flip(sampled_labels, 0.3))
+                loss_weights.append(0.2 * np.ones(batch_size))
             real_batch_loss = discriminator.train_on_batch(
                 [image_batch_1, image_batch_2, image_batch_3, energy_batch],
-                discriminator_outputs_real
+                discriminator_outputs_real,
+                loss_weights
                 # np.ones(batch_size)
                 #[np.ones(batch_size), energy_batch]
                 # [np.ones(batch_size), 0.25 * np.ones(batch_size)]  # weights
@@ -477,7 +480,8 @@ if __name__ == '__main__':
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
                 generated_images + [sampled_energies],
-                discriminator_outputs_fake
+                discriminator_outputs_fake,
+                loss_weights
                 # np.zeros(batch_size)
                 #[np.zeros(batch_size), sampled_energies],
                 # [np.ones(batch_size), 0.25 * np.ones(batch_size)]  # weights
@@ -509,7 +513,8 @@ if __name__ == '__main__':
                     combined_outputs.append(sampled_labels)
                 gen_losses.append(combined.train_on_batch(
                     combined_inputs,
-                    combined_outputs
+                    combined_outputs,
+                    loss_weights
                     # [noise, sampled_labels.reshape(-1, 1)],
                     #[noise, sampled_energies],
                     #[trick, sampled_energies],
