@@ -12,9 +12,13 @@ from keras import initializers, regularizers, constraints, activations
 from keras.layers import Lambda, ZeroPadding2D, LocallyConnected2D
 from keras.layers.merge import concatenate, multiply
 
-from architectures import channel_softmax
-
 import numpy as np
+
+
+def channel_softmax(x):
+    e = K.exp(x - K.max(x, axis=-1, keepdims=True))
+    s = K.sum(e, axis=-1, keepdims=True)
+    return e / s
 
 
 def scale(x, v):
