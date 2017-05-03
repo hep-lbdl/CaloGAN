@@ -183,7 +183,7 @@ if __name__ == '__main__':
         first, second, third, y, energy, random_state=0)
 
     #from sklearn.utils import shuffle
-    #first, second, third, energy = shuffle(
+    # first, second, third, energy = shuffle(
     #    first, second, third, energy, random_state=0)
     # we don't really need validation data as it's a bit meaningless for GANs,
     # but since we have an auxiliary task, it can be helpful to debug mode
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     calorimeter = [Input(shape=sizes[:2] + [1]),
                    Input(shape=sizes[2:4] + [1]),
                    Input(shape=sizes[4:] + [1])]
-    
+
     input_energy = Input(shape=(1, ))
 
     features = []
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
     discriminator_outputs = [fake, total_energy]
     discriminator_losses = ['binary_crossentropy', mean_absolute_error(1 / 5.)]
-    if nb_classes > 1: # acgan
+    if nb_classes > 1:  # acgan
         aux = Dense(1, activation='sigmoid', name='auxiliary_output')(p)
         discriminator_outputs.append(aux)
         if nb_classes > 2:
@@ -312,14 +312,15 @@ if __name__ == '__main__':
     latent = Input(shape=(latent_size, ), name='z')
     input_energy = Input(shape=(1, ), dtype='float32')
     generator_inputs = [latent, input_energy]
+
     def _pairwise(iterable):
         '''s -> (s0, s1), (s2, s3), (s4, s5), ...'''
         a = iter(iterable)
         return izip(a, a)
 
     output_layers = []
-    if nb_classes > 1: #acgan
-        image_class = Input(shape=(1, ), dtype='int32') # label
+    if nb_classes > 1:  # acgan
+        image_class = Input(shape=(1, ), dtype='int32')  # label
         emb = Flatten()(Embedding(nb_classes, latent_size, input_length=1,
                                   embeddings_initializer='glorot_normal')(image_class))
         # hadamard product between z-space and a class conditional embedding
@@ -343,14 +344,17 @@ if __name__ == '__main__':
     # inpainting
     zero2one = AveragePooling2D(pool_size=(1, 8))(
         UpSampling2D(size=(4, 1))(img_layer0))
-    final_img_layer1 = add([zero2one, img_layer1])
+    # final_img_layer1 = add([zero2one, img_layer1])
+    final_img_layer1 = inpainting_attention(img_layer1, zero2one)
+
     one2two = AveragePooling2D(pool_size=(1, 2))(final_img_layer1)
-    final_img_layer2 = add([one2two, img_layer2])
+    # final_img_layer2 = add([one2two, img_layer2])
+    final_img_layer2 = inpainting_attention(img_layer2, one2two)
 
     generator_outputs = [
         Activation('relu')(img_layer0),
-        Activation('relu')(final_img_layer1),#(img_layer1),
-        Activation('relu')(final_img_layer2)#(img_layer2)
+        Activation('relu')(final_img_layer1),  # (img_layer1),
+        Activation('relu')(final_img_layer2)  # (img_layer2)
     ]
 
     generator = Model(generator_inputs, generator_outputs)
@@ -379,7 +383,7 @@ if __name__ == '__main__':
     # isfake = discriminator(generator([latent, input_energy]))
     # isfake, aux_energy = discriminator(generator([latent, input_energy]))
     # isfake, aux_energy = discriminator(generator(generator_inputs) + [input_energy])
-    combined_outputs =  discriminator(generator(generator_inputs) + [input_energy]) 
+    combined_outputs = discriminator(generator(generator_inputs) + [input_energy])
 
     combined = Model(
         inputs=generator_inputs,
@@ -397,7 +401,7 @@ if __name__ == '__main__':
    # plot_model(combined,
    #            to_file='combined.png',
     #           show_shapes=True,
-     #          show_layer_names=True)
+    #          show_layer_names=True)
 
 #    discriminator.load_weights('./params_discriminator_epoch_000.hdf5')
 #    generator.load_weights('./params_generator_epoch_000.hdf5')
