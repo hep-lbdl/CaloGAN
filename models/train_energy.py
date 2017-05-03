@@ -35,7 +35,7 @@ from keras.losses import mean_absolute_error as _mean_absolute_error
 from ops import (minibatch_discriminator, minibatch_output_shape, Dense3D,
                  single_layer_energy, single_layer_energy_output_shape,
                  sparsity_level, sparsity_output_shape, calculate_energy,
-                 energy_error, scale)
+                 energy_error, scale, inpainting_attention)
 
 K.set_image_dim_ordering('tf')
 
