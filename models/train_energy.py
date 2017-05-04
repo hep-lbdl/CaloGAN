@@ -83,6 +83,9 @@ def get_parser():
     parser.add_argument('--prog-bar', action='store_true',
                         help='Whether or not to use a progress bar')
 
+    parser.add_argument('--in-paint', action='store_true',
+                        help='Whether or not to inpaint')
+
     parser.add_argument('--d-pfx', action='store',
                         default='params_discriminator_epoch_',
                         help='Default prefix for discriminator network weights')
@@ -341,20 +344,22 @@ if __name__ == '__main__':
     img_layer1 = build_generator(h, 12, 12)
     img_layer2 = build_generator(h, 12, 6)
 
-    # inpainting
-    zero2one = AveragePooling2D(pool_size=(1, 8))(
-        UpSampling2D(size=(4, 1))(img_layer0))
-    # final_img_layer1 = add([zero2one, img_layer1])
-    final_img_layer1 = inpainting_attention(img_layer1, zero2one)
+    if parse_args.in_paint:
 
-    one2two = AveragePooling2D(pool_size=(1, 2))(final_img_layer1)
-    # final_img_layer2 = add([one2two, img_layer2])
-    final_img_layer2 = inpainting_attention(img_layer2, one2two)
+        # inpainting
+        zero2one = AveragePooling2D(pool_size=(1, 8))(
+            UpSampling2D(size=(4, 1))(img_layer0))
+        # final_img_layer1 = add([zero2one, img_layer1])
+        img_layer1 = inpainting_attention(img_layer1, zero2one)
+
+        one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
+        # final_img_layer2 = add([one2two, img_layer2])
+        img_layer2 = inpainting_attention(img_layer2, one2two)
 
     generator_outputs = [
         Activation('relu')(img_layer0),
-        Activation('relu')(final_img_layer1),  # (img_layer1),
-        Activation('relu')(final_img_layer2)  # (img_layer2)
+        Activation('relu')(img_layer1),
+        Activation('relu')(img_layer2)
     ]
 
     generator = Model(generator_inputs, generator_outputs)
