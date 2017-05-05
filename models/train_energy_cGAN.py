@@ -228,7 +228,18 @@ if __name__ == '__main__':
 
         energies.append(calculate_energy(calorimeter[l]))
 
-    features = concatenate(features)
+    discriminator_inputs = calorimeter + [input_energy]
+
+    # conditional gan
+    if nb_classes > 1:
+        input_class = Input(shape=(1, ), dtype='int32')
+        class_embedding = Flatten()(Embedding(
+            nb_classes, 50, input_length=1, embeddings_initializer='glorot_normal')(input_class))
+        features = concatenate(features + [class_embedding])
+        discriminator_inputs.append(input_class)
+    else:
+        features = concatenate(features)
+    
     energies = concatenate(energies)
 
     # calculate the total energy across all rows
@@ -265,13 +276,15 @@ if __name__ == '__main__':
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
     discriminator_outputs = [fake, total_energy]
     discriminator_losses = ['binary_crossentropy', mean_absolute_error(1)]
-    if nb_classes > 1:  # acgan
-        aux = Dense(1, activation='sigmoid', name='auxiliary_output')(p)
-        discriminator_outputs.append(aux)
-        if nb_classes > 2:
-            discriminator_losses.append('sparse_categorical_crossentropy')
-        else:
-            discriminator_losses.append('binary_crossentropy')
+
+    #if nb_classes > 1:  # acgan
+        #aux = Dense(1, activation='sigmoid', name='auxiliary_output')(p)
+        #discriminator_outputs.append(aux)
+        
+        #if nb_classes > 2:
+        #    discriminator_losses.append('sparse_categorical_crossentropy')
+        #else:
+        #    discriminator_losses.append('binary_crossentropy')
 
     # fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
 
@@ -283,7 +296,7 @@ if __name__ == '__main__':
     # discriminator = Model(calorimeter, fake)
 
     # discriminator = Model(calorimeter + [input_energy], fake)
-    discriminator = Model(calorimeter + [input_energy], discriminator_outputs)
+    discriminator = Model(discriminator_inputs, discriminator_outputs)
 
     discriminator.compile(
         optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
@@ -324,6 +337,7 @@ if __name__ == '__main__':
     output_layers = []
     if nb_classes > 1:  # acgan
         image_class = Input(shape=(1, ), dtype='int32')  # label
+        # not the same as the discriminator
         emb = Flatten()(Embedding(nb_classes, latent_size, input_length=1,
                                   embeddings_initializer='glorot_normal')(image_class))
         # hadamard product between z-space and a class conditional embedding
@@ -388,10 +402,15 @@ if __name__ == '__main__':
     # isfake = discriminator(generator([latent, input_energy]))
     # isfake, aux_energy = discriminator(generator([latent, input_energy]))
     # isfake, aux_energy = discriminator(generator(generator_inputs) + [input_energy])
-    combined_outputs = discriminator(generator(generator_inputs) + [input_energy])
-
+    temp_inputs = generator(generator_inputs) + [input_energy]
+    combined_inputs = generator_inputs  # from D 
+    if nb_classes > 1:
+        temp_inputs.append(image_class)
+        combined_inputs.append(input_class)
+    
+    combined_outputs = discriminator(temp_inputs)
     combined = Model(
-        inputs=generator_inputs,
+        inputs=combined_inputs, #generator_inputs,
         # outputs=[isfake, ,
         outputs=combined_outputs,
         name='combined_model'
@@ -464,15 +483,21 @@ if __name__ == '__main__':
             # [noise, sampled_labels.reshape((-1, 1))], verbose=0)
 
             # see if the discriminator can figure itself out...
+            discriminator_inputs_real = [image_batch_1, image_batch_2, image_batch_3, energy_batch]
+            discriminator_inputs_fake = generated_images + [sampled_energies]
             discriminator_outputs_real = [np.ones(batch_size), energy_batch]
             discriminator_outputs_fake = [np.zeros(batch_size), sampled_energies]
             loss_weights = [np.ones(batch_size), 0.2 * np.ones(batch_size)]
-            if nb_classes > 1:
-                discriminator_outputs_real.append(label_batch)
-                discriminator_outputs_fake.append(bit_flip(sampled_labels, 0.3))
-                loss_weights.append(0.2 * np.ones(batch_size))
+            if nb_classes > 1: #cgan
+                discriminator_inputs_real.append(label_batch)
+                discriminator_inputs_fake.append(sampled_labels)
+            #if nb_classes > 1: # acgan
+            #    discriminator_outputs_real.append(label_batch)
+            #    discriminator_outputs_fake.append(bit_flip(sampled_labels, 0.3))
+            #    loss_weights.append(0.2 * np.ones(batch_size))
+
             real_batch_loss = discriminator.train_on_batch(
-                [image_batch_1, image_batch_2, image_batch_3, energy_batch],
+                discriminator_inputs_real,
                 discriminator_outputs_real,
                 loss_weights
                 # np.ones(batch_size)
@@ -484,7 +509,7 @@ if __name__ == '__main__':
             # as we have both minibatch discrimination and batch normalization, both
             # of which rely on batch level stats
             fake_batch_loss = discriminator.train_on_batch(
-                generated_images + [sampled_energies],
+                discriminator_inputs_fake,
                 discriminator_outputs_fake,
                 loss_weights
                 # np.zeros(batch_size)
@@ -515,7 +540,8 @@ if __name__ == '__main__':
                 combined_outputs = [trick, sampled_energies]
                 if nb_classes > 1:
                     combined_inputs.append(sampled_labels)
-                    combined_outputs.append(sampled_labels)
+                    combined_inputs.append(sampled_labels) # twice!
+                    #combined_outputs.append(sampled_labels)
                 gen_losses.append(combined.train_on_batch(
                     combined_inputs,
                     combined_outputs,
