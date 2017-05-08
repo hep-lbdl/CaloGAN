@@ -365,7 +365,7 @@ if __name__ == '__main__':
     generator = Model(generator_inputs, generator_outputs)
 
     generator.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+        optimizer=Adam(lr=10 * adam_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
     # plot_model(
@@ -397,7 +397,7 @@ if __name__ == '__main__':
         name='combined_model'
     )
     combined.compile(
-        optimizer=Adam(lr=1.2 * adam_lr, beta_1=adam_beta_1),
+        optimizer=Adam(lr=10 * adam_lr, beta_1=adam_beta_1),
         loss=discriminator_losses
         # loss=['binary_crossentropy', energy_error]
 
@@ -466,7 +466,7 @@ if __name__ == '__main__':
             # see if the discriminator can figure itself out...
             discriminator_outputs_real = [np.ones(batch_size), energy_batch]
             discriminator_outputs_fake = [np.zeros(batch_size), sampled_energies]
-            loss_weights = [np.ones(batch_size), 0.2 * np.ones(batch_size)]
+            loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size)]
             if nb_classes > 1:
                 discriminator_outputs_real.append(label_batch)
                 discriminator_outputs_fake.append(bit_flip(sampled_labels, 0.3))
