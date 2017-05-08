@@ -6,7 +6,7 @@ The goal of this project is to help physicists at CERN speed up their simulation
 
 The challenges come from the fact that this portion of the detector is longitudinally segmented into three layers with heterogeneous granularity. For simplicity, we can visualize the energy depositions of particles passing through the detector as a series of three images per shower, but it is important to encode the sequential nature of their relationship in the generator. 
 
-![3D shower in the EM calorimeter](figures/3d.pdf)
+![3D shower in the EM calorimeter](/figures/3d.jpg)
 
 ## Getting Started
 
@@ -31,5 +31,7 @@ To run the generation script, run `generate -m cfg/run2.mac`.
 To launch a batch job on PDSF, simply run `./launch <num_jobs>`, to launch `<num_jobs>` concurrent tasks in a job array.
 
 ## The CaloGAN Model
-![Generator](figures/caloGAN_gen.pdf)
-![Discriminator](figures/caloGAN_discr_rev.pdf)
+### Generator
+![Generator](figures/caloGAN_gen.jpg)
+### Discriminator
+![Discriminator](figures/caloGAN_discr_rev.jpg)
