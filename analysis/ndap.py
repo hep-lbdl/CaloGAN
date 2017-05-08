@@ -156,13 +156,13 @@ class NDArrayPlotter(object):
                             zdir='y'
                         )
 
-        # highest = 0                         # Make it look cubic
-        # for size in array.shape:
-        #     if size > highest:
-        #         highest = size
-        # ax.set_xlim((0,highest))
-        # ax.set_ylim((0,highest))
-        # ax.set_zlim((0,highest))
+        highest = 0                         # Make it look cubic
+        for size in array.shape:
+            if size > highest:
+                highest = size
+        ax.set_xlim((0,highest))
+        ax.set_ylim((0,highest))
+        ax.set_zlim((0,highest))
         
 
         #ax.set_title(r"ND array(\textbf{\emph{l}}, \textbf{\emph{m}}, \textbf{\emph{n}}) = %dD %s" % (array.ndim, str(array.shape)))
