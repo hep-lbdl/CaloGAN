@@ -15,9 +15,11 @@ import logging
 
 
 import numpy as np
+import os
 from six.moves import range
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle
+import sys
 import yaml
 
 
@@ -115,6 +117,15 @@ if __name__ == '__main__':
 
     if parse_args.debug:
         logger.setLevel(logging.DEBUG)
+
+    # set up all the logging stuff
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s'
+        '[%(levelname)s]: %(message)s'
+    )
+    hander = logging.StreamHandler(sys.stdout)
+    hander.setFormatter(formatter)
+    logger.addHandler(hander)
 
     nb_epochs = parse_args.nb_epochs
     batch_size = parse_args.batch_size
@@ -294,7 +305,7 @@ if __name__ == '__main__':
 
     # ACGAN case
     if nb_classes > 1:
-        logger.info('running in ACGAN for discriminator mode since found {} '
+        logger.info('running in ACGAN for generator mode since found {} '
                     'classes'.format(nb_classes))
 
         # label of requested class
@@ -360,7 +371,7 @@ if __name__ == '__main__':
     logger.info('commencing training')
 
     for epoch in range(nb_epochs):
-        loggger.info('Epoch {} of {}'.format(epoch + 1, nb_epochs))
+        logger.info('Epoch {} of {}'.format(epoch + 1, nb_epochs))
 
         nb_batches = int(first.shape[0] / batch_size)
         if verbose:
