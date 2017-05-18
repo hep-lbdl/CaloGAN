@@ -36,6 +36,30 @@ Next, you can type `make` which should build an executable called `generate`. Be
 
 To run the generation script, run `generate -m cfg/run2.mac`. You can change generation parameters inside [`cfg/run2.mac`](https://github.com/hep-lbdl/CaloGAN/blob/master/generation/cfg/run2.mac). This will output a file called `plz_work_kthxbai.root` with a TTree named `fancy_tree`, which will contain a branch for each calorimeter cell (`cell_#`) with histograms of the energy deposited in that cell across the various shower events. The last three cells (numbered 504, 505, and 506) actually represent the overflow for each calorimeter layer. Finally, a branch called `TotalEnergy` is added for bookkeeping. 
 
+We provide you with a convenient script to convert the ROOT file into a more manageable HDF5 archive. The `convert.py` script is located in the `generation/` folder and can be used as follows:
+```
+usage: convert.py [-h] --in-file IN_FILE --out-file OUT_FILE --tree TREE
+
+Convert GEANT4 output files into ML-able HDF5 files
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --in-file IN_FILE, -i IN_FILE
+                        input ROOT file
+  --out-file OUT_FILE, -o OUT_FILE
+                        output HDF5 file
+  --tree TREE, -t TREE  input tree for the ROOT file
+
+```
+So you can run, for example, `python convert.py --in-file plz_work_kthxbai.root --out-file test.h5 --tree fancy_tree`.
+Assuming you specified `/run/beamOn 1000` in your `run.mac` file, the structure of the output HDF5 should look like this:
+```
+energy                   Dataset {1000, 1}
+layer_0                  Dataset {1000, 3, 96}
+layer_1                  Dataset {1000, 12, 12}
+layer_2                  Dataset {1000, 12, 6}
+overflow                 Dataset {1000, 3}
+```
 To launch a batch job on PDSF, simply run `./launch <num_jobs>`, to launch `<num_jobs>` concurrent tasks in a job array.
 
 ## The CaloGAN Model
