@@ -86,11 +86,17 @@ void EventAction::EndOfEventAction(const G4Event* event)
   G4PrimaryVertex* primaryVertex = event->GetPrimaryVertex();
   G4PrimaryParticle* primaryParticle = primaryVertex->GetPrimary();
   G4double ke = primaryParticle->GetKineticEnergy()/1000.; //in GeV.
+  G4double px = primaryParticle->GetPx()/1000.;
+  G4double py =primaryParticle->GetPy()/1000.;
+  G4double pz =primaryParticle->GetPz()/1000.;
 
   RunData* runData 
     = static_cast<RunData*>(
         G4RunManager::GetRunManager()->GetNonConstCurrentRun());
   runData->SetTotalEnergy(ke);
+  runData->SetPx(px);
+  runData->SetPy(py);
+  runData->SetPz(pz);
   runData->FillPerEvent();
   
   //print per event (modulo n)

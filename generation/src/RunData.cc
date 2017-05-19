@@ -66,7 +66,9 @@ void RunData::FillPerEvent()
     analysisManager->FillNtupleDColumn(i, fEdep[i]);
   }
   analysisManager->FillNtupleDColumn(kNumCells, GetTotalEnergy());
-
+  analysisManager->FillNtupleDColumn(kNumCells+1, GetPx());
+  analysisManager->FillNtupleDColumn(kNumCells+2, GetPy());
+  analysisManager->FillNtupleDColumn(kNumCells+3, GetPz());
   // for ( G4int i=0; i<kDim; i++) {
   //   // fill histograms
   //   // analysisManager->FillH1(i+1, fEdep[i]);

@@ -72,13 +72,22 @@ public:
   // G4String  GetVolumeName(G4int id) const;
   G4double  GetEdep(G4int id) const;
   G4double GetTotalEnergy(){return TotalEnergy;};
+  G4double GetPx(){return Px;};
+  G4double GetPy(){return Py;};
+  G4double GetPz(){return Pz;};
   void SetTotalEnergy(G4double e){TotalEnergy = e;};
+  void SetPx(G4double px){Px = px;};
+  void SetPy(G4double py){Py = py;};
+  void SetPz(G4double pz){Pz = pz;};
   // G4double  GetTrackLength(G4int id) const; 
 
 private:
   // G4String  fVolumeNames[kDim];
   G4double  fEdep[kNumCells];
   G4double TotalEnergy;
+  G4double Px;
+  G4double Py;
+  G4double Pz;
   // G4double  fTrackLength[kDim];
 };
 

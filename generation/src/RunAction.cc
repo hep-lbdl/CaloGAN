@@ -85,7 +85,9 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("cell_" + out.str());
   }
   analysisManager->CreateNtupleDColumn("TotalEnergy");
-  
+  analysisManager->CreateNtupleDColumn("Px");
+  analysisManager->CreateNtupleDColumn("Py");
+  analysisManager->CreateNtupleDColumn("Pz");
   // analysisManager->CreateNtupleDColumn("Eabs");
   // analysisManager->CreateNtupleDColumn("Egap");
   // analysisManager->CreateNtupleDColumn("Labs");
