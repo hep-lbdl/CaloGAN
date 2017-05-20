@@ -75,10 +75,19 @@ public:
   G4double GetPx(){return Px;};
   G4double GetPy(){return Py;};
   G4double GetPz(){return Pz;};
+  G4double GetX0(){return X0;};
+  G4double GetY0(){return Y0;};
+  G4double GetZ0(){return Z0;};
+  G4double GetT0(){return T0;};
+
   void SetTotalEnergy(G4double e){TotalEnergy = e;};
   void SetPx(G4double px){Px = px;};
   void SetPy(G4double py){Py = py;};
   void SetPz(G4double pz){Pz = pz;};
+  void SetX0(G4double x0){X0 = x0;};
+  void SetY0(G4double y0){Y0 = y0;};
+  void SetZ0(G4double z0){Z0 = z0;};
+  void SetT0(G4double t0){T0 = t0;};
   // G4double  GetTrackLength(G4int id) const; 
 
 private:
@@ -88,6 +97,10 @@ private:
   G4double Px;
   G4double Py;
   G4double Pz;
+  G4double X0;
+  G4double Y0;
+  G4double Z0;
+  G4double T0;
   // G4double  fTrackLength[kDim];
 };
 

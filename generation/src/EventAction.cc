@@ -89,6 +89,10 @@ void EventAction::EndOfEventAction(const G4Event* event)
   G4double px = primaryParticle->GetPx()/1000.;
   G4double py =primaryParticle->GetPy()/1000.;
   G4double pz =primaryParticle->GetPz()/1000.;
+  G4double x0 = primaryVertex->GetX0();
+  G4double y0 = primaryVertex->GetY0();
+  G4double z0 = primaryVertex->GetZ0();
+  G4double t0 = primaryVertex->GetT0();
 
   RunData* runData 
     = static_cast<RunData*>(
@@ -97,6 +101,10 @@ void EventAction::EndOfEventAction(const G4Event* event)
   runData->SetPx(px);
   runData->SetPy(py);
   runData->SetPz(pz);
+  runData->SetX0(x0);
+  runData->SetY0(y0);
+  runData->SetZ0(z0);
+  runData->SetT0(t0);
   runData->FillPerEvent();
   
   //print per event (modulo n)

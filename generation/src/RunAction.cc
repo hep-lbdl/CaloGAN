@@ -88,6 +88,10 @@ RunAction::RunAction()
   analysisManager->CreateNtupleDColumn("Px");
   analysisManager->CreateNtupleDColumn("Py");
   analysisManager->CreateNtupleDColumn("Pz");
+  analysisManager->CreateNtupleDColumn("X0");
+  analysisManager->CreateNtupleDColumn("Y0");
+  analysisManager->CreateNtupleDColumn("Z0");
+  analysisManager->CreateNtupleDColumn("T0");
   // analysisManager->CreateNtupleDColumn("Eabs");
   // analysisManager->CreateNtupleDColumn("Egap");
   // analysisManager->CreateNtupleDColumn("Labs");

@@ -69,6 +69,10 @@ void RunData::FillPerEvent()
   analysisManager->FillNtupleDColumn(kNumCells+1, GetPx());
   analysisManager->FillNtupleDColumn(kNumCells+2, GetPy());
   analysisManager->FillNtupleDColumn(kNumCells+3, GetPz());
+  analysisManager->FillNtupleDColumn(kNumCells+4, GetX0());
+  analysisManager->FillNtupleDColumn(kNumCells+5, GetY0());
+  analysisManager->FillNtupleDColumn(kNumCells+6, GetZ0());
+  analysisManager->FillNtupleDColumn(kNumCells+7, GetT0());
   // for ( G4int i=0; i<kDim; i++) {
   //   // fill histograms
   //   // analysisManager->FillH1(i+1, fEdep[i]);
