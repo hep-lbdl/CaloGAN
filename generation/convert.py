@@ -30,6 +30,13 @@ def write_out_file(infile, outfile, tree=None):
 
     X = pd.DataFrame(tree2array(T, branches=cells)).values
     E = pd.DataFrame(tree2array(T, branches=['TotalEnergy'])).values.ravel()
+    x0 = pd.DataFrame(tree2array(T, branches=['X0'])).values.ravel()
+    y0 = pd.DataFrame(tree2array(T, branches=['Y0'])).values.ravel()
+    z0 = pd.DataFrame(tree2array(T, branches=['Z0'])).values.ravel()
+    t0 = pd.DataFrame(tree2array(T, branches=['T0'])).values.ravel()
+    px = pd.DataFrame(tree2array(T, branches=['Px'])).values.ravel()
+    py = pd.DataFrame(tree2array(T, branches=['Py'])).values.ravel()
+    pz = pd.DataFrame(tree2array(T, branches=['Pz'])).values.ravel()
 
     with HDF5File(outfile, 'w') as h5:
         for layer, (sh, (l, u)) in enumerate(zip(LAYER_SPECS, LAYER_DIV)):
@@ -37,6 +44,13 @@ def write_out_file(infile, outfile, tree=None):
 
         h5['overflow'] = X[:, -OVERFLOW_BINS:]
         h5['energy'] = E.reshape(-1, 1)
+        h5['x0'] = x0.reshape(-1, 1)
+        h5['y0'] = y0.reshape(-1, 1)
+        h5['z0'] = z0.reshape(-1, 1)
+        h5['t0'] = t0.reshape(-1, 1)
+        h5['px'] = px.reshape(-1, 1)
+        h5['py'] = py.reshape(-1, 1)
+        h5['pz'] = pz.reshape(-1, 1)
 
 if __name__ == '__main__':
     import argparse
