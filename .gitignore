@@ -1,3 +1,6 @@
+# particles yaml file
+*.yaml
+
 # images
 *.png
 
