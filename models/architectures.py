@@ -73,11 +73,11 @@ def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False):
 
     """
 
-    x = Conv2D(64, (2, 2), padding='same')(image)
+    x = Conv2D(16, (2, 2), padding='same')(image)
     x = LeakyReLU()(x)
 
     x = ZeroPadding2D((1, 1))(x)
-    x = LocallyConnected2D(16, (3, 3), padding='valid', strides=(1, 2))(x)
+    x = LocallyConnected2D(8, (3, 3), padding='valid', strides=(1, 2))(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
