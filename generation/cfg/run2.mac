@@ -3,15 +3,17 @@
 # To be run preferably in batch, without graphics:
 # % example[a,b,c,d] run2.mac
 #
-# /run/numberOfWorkers 4
+#/run/numberOfWorkers 4
 /run/initialize
 #
 # Default kinemtics: 
 # electron 50 MeV in direction (0.,0.,1.)
 # 1000 events
 #
+
 /run/printProgress 1
 /run/verbose 2
+
 #/gun/particle e-
 #/gun/particle pi0
 #/gun/particle pi+
@@ -29,10 +31,10 @@
 /gps/pos/halfy 5 cm
 #/gps/pos/type Beam 
 /gps/pos/centre 0.0 0.0 -28.8
-/gps/direction 0 0 1
+#/gps/direction 0 0 1
 
 /gps/ang/type iso
-/gps/ang/maxtheta 175 deg
+/gps/ang/maxtheta 15 deg
 
 /gps/ene/type Lin
 /gps/ene/min 1 GeV	
