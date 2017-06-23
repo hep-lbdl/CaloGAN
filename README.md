@@ -62,6 +62,14 @@ layer_0                  Dataset {1000, 3, 96}
 layer_1                  Dataset {1000, 12, 12}
 layer_2                  Dataset {1000, 12, 6}
 overflow                 Dataset {1000, 3}
+px                       Dataset {1000, 1}
+py                       Dataset {1000, 1}
+pz                       Dataset {1000, 1}
+t0                       Dataset {1000, 1}
+x0                       Dataset {1000, 1}
+y0                       Dataset {1000, 1}
+z0                       Dataset {1000, 1}
+
 ```
 To launch a batch job on PDSF, simply run `./launch <num_jobs>`, to launch `<num_jobs>` concurrent tasks in a job array.
 
