@@ -1,3 +1,6 @@
+# pdsf job outputs
+batch_generate.sh.*
+
 # images
 *.png
 

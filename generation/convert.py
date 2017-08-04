@@ -38,7 +38,7 @@ def write_out_file(infile, outfile, tree=None):
     py = pd.DataFrame(tree2array(T, branches=['Py'])).values.ravel()
     pz = pd.DataFrame(tree2array(T, branches=['Pz'])).values.ravel()
 
-    with HDF5File(outfile, 'w') as h5:
+    with HDF5File(outfile, 'w', compression='gzip') as h5:
         for layer, (sh, (l, u)) in enumerate(zip(LAYER_SPECS, LAYER_DIV)):
             h5['layer_{}'.format(layer)] = X[:, l:u].reshape((-1, ) + sh)
 
