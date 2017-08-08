@@ -101,7 +101,7 @@ if __name__ == '__main__':
     import keras.backend as K
     from keras.layers import (Activation, AveragePooling2D, Dense, Embedding,
                               Flatten, Input, Lambda, UpSampling2D, LeakyReLU,
-                              BatchNormalization)
+                              BatchNormalization, Reshape)
     from keras.layers.merge import add, concatenate, multiply
     from keras.models import Model
     from keras.optimizers import Adam
