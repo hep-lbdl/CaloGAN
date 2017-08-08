@@ -350,7 +350,7 @@ if __name__ == '__main__':
 
         x = Dense(sum(map(np.prod, list_of_shapes)))(x)
 
-        return [Reshape(sh)(slicer(x, slice(*sp))) for sp, sh in zip(spec, list_of_shapes)]
+        return [Reshape(sh + (1, ))(slicer(x, slice(*sp))) for sp, sh in zip(spec, list_of_shapes)]
 
     img_layer0, img_layer1, img_layer2 = dense_generator(h)
 
