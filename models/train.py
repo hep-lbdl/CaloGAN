@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 """ 
 file: train.py
-description: main training script for [arXiv/1705.02355]
-author: Luke de Oliveira (lukedeo@manifold.ai), 
+author: Luke de Oliveira (lukedeo@vaitech.io), 
         Michela Paganini (michela.paganini@yale.edu)
 """
 
@@ -100,7 +99,7 @@ if __name__ == '__main__':
     # delay the imports so running train.py -h doesn't take 5,234,807 years
     import keras.backend as K
     from keras.layers import (Activation, AveragePooling2D, Dense, Embedding,
-                              Flatten, Input, Lambda, UpSampling2D)
+                              Flatten, Input, Lambda, UpSampling2D, Concatenate)
     from keras.layers.merge import add, concatenate, multiply
     from keras.models import Model
     from keras.optimizers import Adam
@@ -173,8 +172,13 @@ if __name__ == '__main__':
         first = np.expand_dims(d['layer_0'][:], -1)
         second = np.expand_dims(d['layer_1'][:], -1)
         third = np.expand_dims(d['layer_2'][:], -1)
-        # convert to MeV
-        energy = d['energy'][:].reshape(-1, 1) * 1000
+        energy = d['energy'][:].reshape(-1, 1) # GeV
+        x0 = d['x0'][:].reshape(-1, 1)
+        y0 = d['y0'][:].reshape(-1, 1)
+        # transform momenta to angles
+        p = np.sqrt(d['px'][:]**2 + d['py'][:]**2 + d['pz'][:]**2)
+        theta = np.arccos(d['py'][:] / p)
+        phi = np.arctan(-d['px'][:] / d['pz'][:])
 
         sizes = [
             first.shape[1], first.shape[2],
@@ -186,11 +190,11 @@ if __name__ == '__main__':
 
         d.close()
 
-        return first, second, third, y, energy, sizes
+        return first, second, third, y, energy, x0, y0, theta, phi, sizes
 
     logger.debug('loading data from {} files'.format(nb_classes))
 
-    first, second, third, y, energy, sizes = [
+    first, second, third, y, energy, x0, y0, theta, phi, sizes = [
         np.concatenate(t) for t in [
             a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
         ]
@@ -200,16 +204,16 @@ if __name__ == '__main__':
     sizes = sizes[:6].tolist()
 
     # scale the energy depositions by 1000 to convert MeV => GeV
-    first, second, third, energy = [
+    first, second, third = [
         (X.astype(np.float32) / 1000)
-        for X in [first, second, third, energy]
+        for X in [first, second, third]
     ]
 
     le = LabelEncoder()
     y = le.fit_transform(y)
 
-    first, second, third, y, energy = shuffle(first, second, third, y, energy,
-                                              random_state=0)
+    first, second, third, y, energy, x0, y0, theta, phi = shuffle(
+        first, second, third, y, energy, x0, y0, theta, phi, random_state=0)
 
     logger.info('Building discriminator')
 
@@ -217,8 +221,8 @@ if __name__ == '__main__':
                    Input(shape=sizes[2:4] + [1]),
                    Input(shape=sizes[4:] + [1])]
 
-    input_energy = Input(shape=(1, ))
-
+    #input_properties = Input(shape=(5, )) # E,x0,y0,theta,phi
+    input_energy = Input(shape=(1, ), name='energy_D_input')
     features = []
     energies = []
 
@@ -274,8 +278,9 @@ if __name__ == '__main__':
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
-    discriminator_outputs = [fake, total_energy]
-    discriminator_losses = ['binary_crossentropy', 'mae']
+    angle_pos = Dense(4, activation='linear', name='angpos_outputs')(features)
+    discriminator_outputs = [fake, total_energy, angle_pos]
+    discriminator_losses = ['binary_crossentropy', 'mae', 'mse']
     # ACGAN case
     if nb_classes > 1:
         logger.info('running in ACGAN for discriminator mode since found {} '
@@ -300,8 +305,13 @@ if __name__ == '__main__':
     logger.info('Building generator')
 
     latent = Input(shape=(latent_size, ), name='z')
-    input_energy = Input(shape=(1, ), dtype='float32')
-    generator_inputs = [latent, input_energy]
+    input_properties_g = [
+        Input(shape=(1, ), name='E'),
+        Input(shape=(1, ), name='theta'),
+        Input(shape=(1, ), name='phi'),
+        Input(shape=(1, ), name='x0'),
+        Input(shape=(1, ), name='y0')] #E,theta,phi,x0,y0
+    generator_inputs = [latent] + input_properties_g
 
     # ACGAN case
     if nb_classes > 1:
@@ -318,11 +328,27 @@ if __name__ == '__main__':
         hc = multiply([latent, emb])
 
         # requested energy comes in GeV
-        h = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
+        #h = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
+        h = Concatenate()([
+            hc,
+            scale(input_properties_g[0], 100),
+            input_properties_g[1],
+            input_properties_g[2],
+            scale(input_properties_g[3], 50),
+            scale(input_properties_g[4], 50)
+        ])
         generator_inputs.append(image_class)
     else:
         # requested energy comes in GeV
-        h = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
+        #h = Lambda(lambda x: x[0] * x[1])a([
+        h = Concatenate()([
+            latent,
+            scale(input_properties_g[0], 100),
+            input_properties_g[1],
+            input_properties_g[2],
+            scale(input_properties_g[3], 50),
+            scale(input_properties_g[4], 50)
+        ])
 
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
     # linear last layer
@@ -362,7 +388,7 @@ if __name__ == '__main__':
         generator(generator_inputs) + [input_energy]
     )
 
-    combined = Model(generator_inputs, combined_outputs, name='combined_model')
+    combined = Model(generator_inputs + [input_energy], combined_outputs, name='combined_model') # added input e
     combined.compile(
         optimizer=Adam(lr=gen_lr, beta_1=adam_beta_1),
         loss=discriminator_losses
@@ -398,13 +424,22 @@ if __name__ == '__main__':
             image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
             label_batch = y[index * batch_size:(index + 1) * batch_size]
             energy_batch = energy[index * batch_size:(index + 1) * batch_size]
+            theta_batch = theta[index * batch_size:(index + 1) * batch_size]
+            phi_batch = phi[index * batch_size:(index + 1) * batch_size]
+            x0_batch = x0[index * batch_size:(index + 1) * batch_size]
+            y0_batch = y0[index * batch_size:(index + 1) * batch_size]
 
-            # energy_breakdown
-
+            # get random inputs for generator
             sampled_labels = np.random.randint(0, nb_classes, batch_size)
             sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
+            sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
+            sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
+            sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
+            sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
 
-            generator_inputs = [noise, sampled_energies]
+            generator_inputs = [
+                noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0
+            ]
             if nb_classes > 1:
                 # in the case of the ACGAN, we need to append the requested
                 # class to the pre-image of the generator
@@ -412,11 +447,15 @@ if __name__ == '__main__':
 
             generated_images = generator.predict(generator_inputs, verbose=0)
 
-            disc_outputs_real = [np.ones(batch_size), energy_batch]
-            disc_outputs_fake = [np.zeros(batch_size), sampled_energies]
+            disc_outputs_real = [
+                np.ones(batch_size), energy_batch, np.concatenate((theta_batch, phi_batch, x0_batch, y0_batch), axis=-1)
+            ]
+            disc_outputs_fake = [
+                np.zeros(batch_size), sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)
+            ]
 
             # downweight the energy reconstruction loss ($\lambda_E$ in paper)
-            loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size)]
+            loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size), 0.05 * np.ones(batch_size)]
             if nb_classes > 1:
                 # in the case of the ACGAN, we need to append the realrequested
                 # class to the target
@@ -453,10 +492,13 @@ if __name__ == '__main__':
             # train the discriminator
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
-
                 sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
-                combined_inputs = [noise, sampled_energies]
-                combined_outputs = [trick, sampled_energies]
+                sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
+                sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
+                sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
+                sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
+                combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0, sampled_energies]
+                combined_outputs = [trick, sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)]
                 if nb_classes > 1:
                     sampled_labels = np.random.randint(0, nb_classes,
                                                        batch_size)
