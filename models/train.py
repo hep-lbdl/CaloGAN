@@ -98,8 +98,8 @@ if __name__ == '__main__':
 
     # delay the imports so running train.py -h doesn't take 5,234,807 years
     import keras.backend as K
-    from keras.layers import (Activation, AveragePooling2D, Dense, Embedding,
-                              Flatten, Input, Lambda, UpSampling2D, Concatenate)
+    from keras.layers import (Activation, AveragePooling2D, Dense, Embedding, LeakyReLU,
+                              Flatten, Input, Lambda, UpSampling2D, Concatenate, Dropout)
     from keras.layers.merge import add, concatenate, multiply
     from keras.models import Model
     from keras.optimizers import Adam
@@ -278,7 +278,21 @@ if __name__ == '__main__':
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
-    angle_pos = Dense(4, activation='linear', name='angpos_outputs')(features)
+    raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
+    def regression_branch(raveled_images):
+        h = Dense(512)(raveled_images)
+        h = Dropout(0.2)(LeakyReLU()(h))
+        h = Dense(1024)(h)
+        h = Dropout(0.5)(LeakyReLU()(h))
+        h = Dense(1024)(h)
+        h = Dropout(0.5)(LeakyReLU()(h))
+        h = Dense(128)(h)
+        h = Dropout(0.5)(LeakyReLU()(h))
+        y = Dense(4, activation='linear', name='angpos_outputs')(h)
+        return y
+
+    angle_pos = regression_branch(raveled_calo)
+    #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
     discriminator_outputs = [fake, total_energy, angle_pos]
     discriminator_losses = ['binary_crossentropy', 'mae', 'mse']
     # ACGAN case
@@ -455,7 +469,7 @@ if __name__ == '__main__':
             ]
 
             # downweight the energy reconstruction loss ($\lambda_E$ in paper)
-            loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size), 0.05 * np.ones(batch_size)]
+            loss_weights = [np.ones(batch_size), 0.01 * np.ones(batch_size), 0.01 * np.ones(batch_size)]
             if nb_classes > 1:
                 # in the case of the ACGAN, we need to append the realrequested
                 # class to the target
@@ -490,7 +504,7 @@ if __name__ == '__main__':
 
             # we do this twice simply to match the number of batches per epoch used to
             # train the discriminator
-            for _ in range(2):
+            for _ in range(3): # changed 2 to 3 to give more time to G
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
                 sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
                 sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
