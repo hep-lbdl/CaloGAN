@@ -48,11 +48,12 @@ def build_generator(x, nb_rows, nb_cols):
     x = BatchNormalization()(x)
 
     x = LocallyConnected2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+    #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
     x = LeakyReLU()(x)
 
     x = LocallyConnected2D(1, (2, 2), use_bias=False,
                            kernel_initializer='glorot_normal')(x)
-
+    #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
     return x
 
 
@@ -78,16 +79,19 @@ def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False):
 
     x = ZeroPadding2D((1, 1))(x)
     x = LocallyConnected2D(16, (3, 3), padding='valid', strides=(1, 2))(x)
+    #x = Conv2D(16, (3, 3), padding='valid', strides=(1, 2))(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
     x = ZeroPadding2D((1, 1))(x)
     x = LocallyConnected2D(8, (2, 2), padding='valid')(x)
+    #x = Conv2D(8, (2, 2), padding='valid')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
     x = ZeroPadding2D((1, 1))(x)
     x = LocallyConnected2D(8, (2, 2), padding='valid', strides=(1, 2))(x)
+    #x = Conv2D(8, (2, 2), padding='valid', strides=(1, 2))(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
