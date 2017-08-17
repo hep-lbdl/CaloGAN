@@ -131,11 +131,9 @@ if __name__ == '__main__':
     latent_size = parse_args.latent_size
     verbose = parse_args.prog_bar
     no_attn = parse_args.no_attn
-
     disc_lr = parse_args.disc_lr
     gen_lr = parse_args.gen_lr
     adam_beta_1 = parse_args.adam_beta
-
     yaml_file = parse_args.dataset
 
     logger.debug('parameter configuration:')
@@ -222,7 +220,7 @@ if __name__ == '__main__':
                    Input(shape=sizes[4:] + [1])]
 
     #input_properties = Input(shape=(5, )) # E,x0,y0,theta,phi
-    input_energy = Input(shape=(1, ), name='energy_D_input')
+    input_energy = Input(shape=(1, ))
     features = []
     energies = []
 
@@ -319,13 +317,14 @@ if __name__ == '__main__':
     logger.info('Building generator')
 
     latent = Input(shape=(latent_size, ), name='z')
+    input_energy = Input(shape=(1, ), dtype='float32')
     input_properties_g = [
-        Input(shape=(1, ), name='E'),
+        #        Input(shape=(1, ), name='E'),
         Input(shape=(1, ), name='theta'),
         Input(shape=(1, ), name='phi'),
         Input(shape=(1, ), name='x0'),
         Input(shape=(1, ), name='y0')] #E,theta,phi,x0,y0
-    generator_inputs = [latent] + input_properties_g
+    generator_inputs = [latent, input_energy] + input_properties_g
 
     # ACGAN case
     if nb_classes > 1:
@@ -345,11 +344,11 @@ if __name__ == '__main__':
         #h = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
         h = Concatenate()([
             hc,
-            scale(input_properties_g[0], 100),
+            scale(input_energy, 100),
+            input_properties_g[0],
             input_properties_g[1],
-            input_properties_g[2],
-            scale(input_properties_g[3], 50),
-            scale(input_properties_g[4], 50)
+            scale(input_properties_g[2], 50),
+            scale(input_properties_g[3], 50)
         ])
         generator_inputs.append(image_class)
     else:
@@ -357,11 +356,11 @@ if __name__ == '__main__':
         #h = Lambda(lambda x: x[0] * x[1])a([
         h = Concatenate()([
             latent,
-            scale(input_properties_g[0], 100),
+            scale(input_energy, 100),
+            input_properties_g[0],
             input_properties_g[1],
-            input_properties_g[2],
-            scale(input_properties_g[3], 50),
-            scale(input_properties_g[4], 50)
+            scale(input_properties_g[2], 50),
+            scale(input_properties_g[3], 50)
         ])
 
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
@@ -402,7 +401,8 @@ if __name__ == '__main__':
         generator(generator_inputs) + [input_energy]
     )
 
-    combined = Model(generator_inputs + [input_energy], combined_outputs, name='combined_model') # added input e
+    #combined = Model(generator_inputs + [input_energy], combined_outputs, name='combined_model') # added input e
+    combined = Model(generator_inputs, combined_outputs, name='combined_model')
     combined.compile(
         optimizer=Adam(lr=gen_lr, beta_1=adam_beta_1),
         loss=discriminator_losses
@@ -469,7 +469,7 @@ if __name__ == '__main__':
             ]
 
             # downweight the energy reconstruction loss ($\lambda_E$ in paper)
-            loss_weights = [np.ones(batch_size), 0.01 * np.ones(batch_size), 0.01 * np.ones(batch_size)]
+            loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size), 0.01 * np.ones(batch_size)]
             if nb_classes > 1:
                 # in the case of the ACGAN, we need to append the realrequested
                 # class to the target
@@ -504,14 +504,15 @@ if __name__ == '__main__':
 
             # we do this twice simply to match the number of batches per epoch used to
             # train the discriminator
-            for _ in range(3): # changed 2 to 3 to give more time to G
+            for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
                 sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
                 sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
                 sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
                 sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
                 sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
-                combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0, sampled_energies]
+                #combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0, sampled_energies]
+                combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0]
                 combined_outputs = [trick, sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)]
                 if nb_classes > 1:
                     sampled_labels = np.random.randint(0, nb_classes,
