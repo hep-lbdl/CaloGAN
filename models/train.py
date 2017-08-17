@@ -75,6 +75,12 @@ def get_parser():
     parser.add_argument('--debug', action='store_true',
                         help='Whether to run debug level logging')
 
+    parser.add_argument('--no-angle-pos', action='store_true',
+                        help='Whether to exclude angle and position info and regression')
+
+    parser.add_argument('--multiply-e', action='store_true',
+                        help='Whether to multiply E into the latent space, instead of concatenating')
+    
     parser.add_argument('--d-pfx', action='store',
                         default='params_discriminator_epoch_',
                         help='Default prefix for discriminator network weights')
@@ -135,7 +141,9 @@ if __name__ == '__main__':
     gen_lr = parse_args.gen_lr
     adam_beta_1 = parse_args.adam_beta
     yaml_file = parse_args.dataset
-
+    angle_pos = not parse_args.no_angle_pos
+    multiply_e = parse_args.multiply_e
+    
     logger.debug('parameter configuration:')
 
     logger.debug('number of epochs = {}'.format(nb_epochs))
@@ -143,11 +151,13 @@ if __name__ == '__main__':
     logger.debug('latent size = {}'.format(latent_size))
     logger.debug('progress bar enabled = {}'.format(verbose))
     logger.debug('Using attention = {}'.format(no_attn == False))
+    logger.debug('Using angle and position regression = {}'.format(angle_pos))
+    logger.debug('Multiplying E into z, instead of concatenating = {}'.format(multiply_e))
     logger.debug('discriminator learning rate = {}'.format(disc_lr))
     logger.debug('generator learning rate = {}'.format(gen_lr))
     logger.debug('Adam $\beta_1$ parameter = {}'.format(adam_beta_1))
     logger.debug('Will read YAML spec from {}'.format(yaml_file))
-
+    
     # read in data file spec from YAML file
     with open(yaml_file, 'r') as stream:
         try:
@@ -276,23 +286,30 @@ if __name__ == '__main__':
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
-    raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
-    def regression_branch(raveled_images):
-        h = Dense(512)(raveled_images)
-        h = Dropout(0.2)(LeakyReLU()(h))
-        h = Dense(1024)(h)
-        h = Dropout(0.5)(LeakyReLU()(h))
-        h = Dense(1024)(h)
-        h = Dropout(0.5)(LeakyReLU()(h))
-        h = Dense(128)(h)
-        h = Dropout(0.5)(LeakyReLU()(h))
-        y = Dense(4, activation='linear', name='angpos_outputs')(h)
-        return y
 
-    angle_pos = regression_branch(raveled_calo)
-    #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
-    discriminator_outputs = [fake, total_energy, angle_pos]
-    discriminator_losses = ['binary_crossentropy', 'mae', 'mse']
+    if angle_pos:
+        raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
+        def regression_branch(raveled_images):
+            h = Dense(512)(raveled_images)
+            h = Dropout(0.2)(LeakyReLU()(h))
+            h = Dense(1024)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            h = Dense(1024)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            h = Dense(128)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            y = Dense(4, activation='linear', name='angpos_outputs')(h)
+            return y
+
+        angle_pos_branch = regression_branch(raveled_calo)
+        #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
+        discriminator_outputs = [fake, total_energy, angle_pos_branch]
+        discriminator_losses = ['binary_crossentropy', 'mae', 'mse']
+
+    else:
+        discriminator_outputs = [fake, total_energy]
+        discriminator_losses = ['binary_crossentropy', 'mae']
+        
     # ACGAN case
     if nb_classes > 1:
         logger.info('running in ACGAN for discriminator mode since found {} '
@@ -341,10 +358,10 @@ if __name__ == '__main__':
         hc = multiply([latent, emb])
 
         # requested energy comes in GeV
-        #h = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
+        he = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
         h = Concatenate()([
-            hc,
-            scale(input_energy, 100),
+            he,
+            #scale(input_energy, 100),
             input_properties_g[0],
             input_properties_g[1],
             scale(input_properties_g[2], 50),
@@ -353,16 +370,27 @@ if __name__ == '__main__':
         generator_inputs.append(image_class)
     else:
         # requested energy comes in GeV
-        #h = Lambda(lambda x: x[0] * x[1])a([
-        h = Concatenate()([
-            latent,
-            scale(input_energy, 100),
-            input_properties_g[0],
-            input_properties_g[1],
-            scale(input_properties_g[2], 50),
-            scale(input_properties_g[3], 50)
-        ])
-
+        if multiply_e:
+            he = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
+            h = Concatenate()([
+                he,
+                #latent,
+                #scale(input_energy, 100),
+                input_properties_g[0],
+                input_properties_g[1],
+                scale(input_properties_g[2], 50),
+                scale(input_properties_g[3], 50)
+            ])
+        else:
+            h = Concatenate()([
+                latent,
+                scale(input_energy, 100),
+                input_properties_g[0],
+                input_properties_g[1],
+                scale(input_properties_g[2], 50),
+                scale(input_properties_g[3], 50)
+            ])
+                 
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
     # linear last layer
     img_layer0 = build_generator(h, 3, 96)
@@ -461,15 +489,20 @@ if __name__ == '__main__':
 
             generated_images = generator.predict(generator_inputs, verbose=0)
 
-            disc_outputs_real = [
-                np.ones(batch_size), energy_batch, np.concatenate((theta_batch, phi_batch, x0_batch, y0_batch), axis=-1)
-            ]
-            disc_outputs_fake = [
-                np.zeros(batch_size), sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)
-            ]
+            if angle_pos:
+                disc_outputs_real = [
+                    np.ones(batch_size), energy_batch, np.concatenate((theta_batch, phi_batch, x0_batch, y0_batch), axis=-1)
+                ]
+                disc_outputs_fake = [
+                    np.zeros(batch_size), sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)
+                ]
+                # downweight the energy reconstruction loss ($\lambda_E$ in paper)
+                loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size), 0.01 * np.ones(batch_size)]
+            else: # removing regression on theta,phi,x0,yo
+                disc_outputs_real = [np.ones(batch_size), energy_batch]
+                disc_outputs_fake = [np.zeros(batch_size), sampled_energies]
+                loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size)]
 
-            # downweight the energy reconstruction loss ($\lambda_E$ in paper)
-            loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size), 0.01 * np.ones(batch_size)]
             if nb_classes > 1:
                 # in the case of the ACGAN, we need to append the realrequested
                 # class to the target
@@ -513,7 +546,10 @@ if __name__ == '__main__':
                 sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
                 #combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0, sampled_energies]
                 combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0]
-                combined_outputs = [trick, sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)]
+                if angle_pos:
+                    combined_outputs = [trick, sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)]
+                else:
+                    combined_outputs = [trick, sampled_energies]
                 if nb_classes > 1:
                     sampled_labels = np.random.randint(0, nb_classes,
                                                        batch_size)
