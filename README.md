@@ -10,7 +10,7 @@ You are more than welcome to use the open data and open-source software provided
 | Training Data (GEANT4 showers, ⟂ to center) | [![DOI](https://zenodo.org/badge/DOI/10.17632/pvn3xc3wy5.1.svg)](https://doi.org/10.17632/pvn3xc3wy5.1)|
 | Source Code (this repo!) | [![DOI](https://zenodo.org/badge/82329392.svg)](https://zenodo.org/badge/latestdoi/82329392)|
 
-**Alternatively, any use of our code and/or paper ideas can simply cite **
+**Alternatively, any use of our code and/or paper ideas can simply cite**
 
 ```
 @article{paganini_calogan,
