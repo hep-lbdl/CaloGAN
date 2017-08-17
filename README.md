@@ -10,6 +10,22 @@ You are more than welcome to use the open data and open-source software provided
 | Training Data (GEANT4 showers, ⟂ to center) | [![DOI](https://zenodo.org/badge/DOI/10.17632/pvn3xc3wy5.1.svg)](https://doi.org/10.17632/pvn3xc3wy5.1)|
 | Source Code (this repo!) | [![DOI](https://zenodo.org/badge/82329392.svg)](https://zenodo.org/badge/latestdoi/82329392)|
 
+**Alternatively, any use of our code and/or paper ideas can simply cite **
+
+```
+@article{paganini_calogan,
+      author         = "Paganini, Michela and de Oliveira, Luke and Nachman,
+                        Benjamin",
+      title          = "{CaloGAN: Simulating 3D High Energy Particle Showers in
+                        Multi-Layer Electromagnetic Calorimeters with Generative
+                        Adversarial Networks}",
+      year           = "2017",
+      eprint         = "1705.02355",
+      archivePrefix  = "arXiv",
+      primaryClass   = "hep-ex",
+}
+```
+
 ## Goal
 The goal of this project is to help physicists at CERN speed up their simulations by encoding the most computationally expensive portion of the simulation process (i.e., showering in the EM calorimeter) in a deep generative model.
 
