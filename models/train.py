@@ -431,12 +431,18 @@ if __name__ == '__main__':
     discriminator.trainable = False
 
     combined_outputs = discriminator(
-        generator(generator_inputs) + [input_energy]
+        generator([latent, input_energy, input_theta,
+                   input_phi, input_x0, input_y0]) + [input_energy]
     )
 
     # combined = Model(generator_inputs + [input_energy], combined_outputs,
     # name='combined_model') # added input e
-    combined = Model(generator_inputs, combined_outputs, name='combined_model')
+    combined = Model(
+        [latent, input_energy, input_theta, input_phi, input_x0, input_y0],
+        combined_outputs,
+        name='combined_model'
+    )
+
     combined.compile(
         optimizer=Adam(lr=gen_lr, beta_1=adam_beta_1),
         loss=discriminator_losses
