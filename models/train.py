@@ -346,9 +346,9 @@ if __name__ == '__main__':
     input_energy = Input(shape=(1, ), dtype='float32', name='E')
 
     # positional_params = [
-    input_theta = Input(shape=(1, ), name='theta'),
-    input_phi = Input(shape=(1, ), name='phi'),
-    input_x0 = Input(shape=(1, ), name='x0'),
+    input_theta = Input(shape=(1, ), name='theta')
+    input_phi = Input(shape=(1, ), name='phi')
+    input_x0 = Input(shape=(1, ), name='x0')
     input_y0 = Input(shape=(1, ), name='y0')
     # ]  # E,theta,phi,x0,y0
     # generator_inputs = [latent, input_energy] + input_properties_g
