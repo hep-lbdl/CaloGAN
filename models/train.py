@@ -225,10 +225,10 @@ if __name__ == '__main__':
             return np.random.choice(x, size=n, replace=True).reshape((n, 1))
         return _
 
-    sample_empirical_x0 = _build_sampler(x0)
-    sample_empirical_y0 = _build_sampler(y0)
-    sample_empirical_theta = _build_sampler(theta)
-    sample_empirical_phi = _build_sampler(phi)
+    sample_empirical_x0 = _build_sampler(x0.ravel())
+    sample_empirical_y0 = _build_sampler(y0.ravel())
+    sample_empirical_theta = _build_sampler(theta.ravel())
+    sample_empirical_phi = _build_sampler(phi.ravel())
 
     logger.info('Building discriminator')
 
