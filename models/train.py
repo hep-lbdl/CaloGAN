@@ -309,10 +309,10 @@ if __name__ == '__main__':
             y = Dense(4, activation='linear', name='angpos_outputs')(h)
             return y
 
-        angle_pos = regression_branch(raveled_calo)
+        estimated_dof = regression_branch(raveled_calo)
         #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
-        discriminator_outputs = [fake, total_energy, angle_pos]
-        discriminator_losses = ['binary_crossentropy', 'mae', 'mse']
+        discriminator_outputs = [fake, total_energy, estimated_dof]
+        discriminator_losses = ['binary_crossentropy', 'mae', 'mae']
 
     else:
         discriminator_outputs = [fake, total_energy]
