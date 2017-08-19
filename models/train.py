@@ -218,6 +218,16 @@ if __name__ == '__main__':
     first, second, third, y, energy, x0, y0, theta, phi = shuffle(
         first, second, third, y, energy, x0, y0, theta, phi, random_state=0)
 
+    first = first.astype('float32')
+    second = second.astype('float32')
+    third = third.astype('float32')
+    y = y.astype('float32')
+    energy = energy.astype('float32')
+    x0 = x0.astype('float32')
+    y0 = y0.astype('float32')
+    theta = theta.astype('float32')
+    phi = phi.astype('float32')
+
     # build some functions to be able to be able to bootstrap from the
     # empirical distributions
     def _build_sampler(x):
@@ -247,7 +257,8 @@ if __name__ == '__main__':
             image=calorimeter[l],
             mbd=True,
             sparsity=True,
-            sparsity_mbd=True
+            sparsity_mbd=True,
+            soft_sparsity=True
         ))
 
         energies.append(calculate_energy(calorimeter[l]))

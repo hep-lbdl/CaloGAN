@@ -16,7 +16,8 @@ import numpy as np
 
 
 from ops import (minibatch_discriminator, minibatch_output_shape,
-                 Dense3D, sparsity_level, sparsity_output_shape)
+                 Dense3D, sparsity_level, soft_sparsity_level,
+                 sparsity_output_shape)
 
 
 def sparse_softmax(x):
@@ -57,7 +58,8 @@ def build_generator(x, nb_rows, nb_cols):
     return x
 
 
-def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False):
+def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False,
+                        soft_sparsity=True):
     """ Generator sub-component for the CaloGAN
 
     Args:
@@ -111,7 +113,10 @@ def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False):
             features.append(Activation('tanh')(minibatch_featurizer(K_x)))
 
         if sparsity or sparsity_mbd:
-            sparsity_detector = Lambda(sparsity_level, sparsity_output_shape)
+            sparsity_detector = Lambda(
+                sparsity_level if not soft_sparsity else soft_sparsity_level,
+                sparsity_output_shape
+            )
             empirical_sparsity = sparsity_detector(image)
             if sparsity:
                 features.append(empirical_sparsity)
