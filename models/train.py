@@ -459,6 +459,14 @@ if __name__ == '__main__':
         loss=discriminator_losses
     )
 
+    logger.info('saving network structures')
+
+    with open('{}_structure.json'.format(parse_args.g_pfx), 'w') as f:
+        f.write(generator.to_json())
+
+    with open('{}_structure.json'.format(parse_args.d_pfx), 'w') as f:
+        f.write(discriminator.to_json())
+
     logger.info('commencing training')
 
     for epoch in range(nb_epochs):
