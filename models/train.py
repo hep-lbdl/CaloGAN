@@ -381,12 +381,14 @@ if __name__ == '__main__':
         generator_inputs.append(image_class)
     else:
         # requested energy comes in GeV
-        scaled_latent_space = Lambda(lambda x: x[0] * x[1])([
-            latent, scale(input_energy, 100)
-        ])
+        # scaled_latent_space = Lambda(lambda x: x[0] * x[1])([
+        #     latent, scale(input_energy, 100)
+        # ])
 
         h = concatenate([
-            scaled_latent_space,
+            # scaled_latent_space,
+            latent,
+            scale(input_energy, 100),
             input_theta,
             input_phi,
             scale(input_x0, 50),
