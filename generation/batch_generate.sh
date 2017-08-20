@@ -11,5 +11,5 @@ source cfg/pdsf-env.sh
 
 #GAN_FNAME="generated_file_$SGE_TASK_ID.root"
 
-setenv GAN_FNAME "/global/homes/p/paganini/scratch/data/piplus_angle_position_$SGE_TASK_ID.root" 
+setenv GAN_FNAME "/global/homes/p/paganini/scratch/data/eplus_angle_position_5deg_2_$SGE_TASK_ID.root" 
 generate -m cfg/run2.mac
