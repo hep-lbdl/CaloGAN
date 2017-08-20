@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 """ 
 file: train.py
-description: main training script for [arXiv/1705.02355]
-author: Luke de Oliveira (lukedeo@manifold.ai), 
+author: Luke de Oliveira (lukedeo@vaitech.io), 
         Michela Paganini (michela.paganini@yale.edu)
 """
 
@@ -41,6 +40,12 @@ def bit_flip(x, prob=0.05):
     x[selection] = 1 * np.logical_not(x[selection])
     return x
 
+# build some functions to be able to be able to bootstrap from the                                                                                                                 
+# empirical distributions                                                                                                                                                                 
+def _build_sampler(x):
+    def _(n):
+        return np.random.choice(x, size=n, replace=True).reshape((n, 1))
+    return _
 
 def get_parser():
     parser = argparse.ArgumentParser(
@@ -76,6 +81,12 @@ def get_parser():
     parser.add_argument('--debug', action='store_true',
                         help='Whether to run debug level logging')
 
+    parser.add_argument('--no-angle-pos', action='store_true',
+                        help='Whether to exclude angle and position info and regression')
+
+    parser.add_argument('--multiply-e', action='store_true',
+                        help='Whether to multiply E into the latent space, instead of concatenating')
+    
     parser.add_argument('--d-pfx', action='store',
                         default='params_discriminator_epoch_',
                         help='Default prefix for discriminator network weights')
@@ -99,8 +110,8 @@ if __name__ == '__main__':
 
     # delay the imports so running train.py -h doesn't take 5,234,807 years
     import keras.backend as K
-    from keras.layers import (Activation, AveragePooling2D, Dense, Embedding,
-                              Flatten, Input, Lambda, UpSampling2D)
+    from keras.layers import (Activation, AveragePooling2D, Dense, Embedding, LeakyReLU,
+                              Flatten, Input, Lambda, UpSampling2D, Concatenate, Dropout)
     from keras.layers.merge import add, concatenate, multiply
     from keras.models import Model
     from keras.optimizers import Adam
@@ -132,13 +143,13 @@ if __name__ == '__main__':
     latent_size = parse_args.latent_size
     verbose = parse_args.prog_bar
     no_attn = parse_args.no_attn
-
     disc_lr = parse_args.disc_lr
     gen_lr = parse_args.gen_lr
     adam_beta_1 = parse_args.adam_beta
-
     yaml_file = parse_args.dataset
-
+    angle_pos = not parse_args.no_angle_pos
+    multiply_e = parse_args.multiply_e
+    
     logger.debug('parameter configuration:')
 
     logger.debug('number of epochs = {}'.format(nb_epochs))
@@ -146,11 +157,13 @@ if __name__ == '__main__':
     logger.debug('latent size = {}'.format(latent_size))
     logger.debug('progress bar enabled = {}'.format(verbose))
     logger.debug('Using attention = {}'.format(no_attn == False))
+    logger.debug('Using angle and position regression = {}'.format(angle_pos))
+    logger.debug('Multiplying E into z, instead of concatenating = {}'.format(multiply_e))
     logger.debug('discriminator learning rate = {}'.format(disc_lr))
     logger.debug('generator learning rate = {}'.format(gen_lr))
     logger.debug('Adam $\beta_1$ parameter = {}'.format(adam_beta_1))
     logger.debug('Will read YAML spec from {}'.format(yaml_file))
-
+    
     # read in data file spec from YAML file
     with open(yaml_file, 'r') as stream:
         try:
@@ -173,8 +186,13 @@ if __name__ == '__main__':
         first = np.expand_dims(d['layer_0'][:], -1)
         second = np.expand_dims(d['layer_1'][:], -1)
         third = np.expand_dims(d['layer_2'][:], -1)
-        # convert to MeV
-        energy = d['energy'][:].reshape(-1, 1) * 1000
+        energy = d['energy'][:].reshape(-1, 1) # GeV
+        x0 = d['x0'][:].reshape(-1, 1)
+        y0 = d['y0'][:].reshape(-1, 1)
+        # transform momenta to angles
+        p = np.sqrt(d['px'][:]**2 + d['py'][:]**2 + d['pz'][:]**2)
+        theta = np.arccos(d['py'][:] / p)
+        phi = np.arctan(-d['px'][:] / d['pz'][:])
 
         sizes = [
             first.shape[1], first.shape[2],
@@ -186,11 +204,11 @@ if __name__ == '__main__':
 
         d.close()
 
-        return first, second, third, y, energy, sizes
+        return first, second, third, y, energy, x0, y0, theta, phi, sizes
 
     logger.debug('loading data from {} files'.format(nb_classes))
 
-    first, second, third, y, energy, sizes = [
+    first, second, third, y, energy, x0, y0, theta, phi, sizes = [
         np.concatenate(t) for t in [
             a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
         ]
@@ -200,16 +218,22 @@ if __name__ == '__main__':
     sizes = sizes[:6].tolist()
 
     # scale the energy depositions by 1000 to convert MeV => GeV
-    first, second, third, energy = [
+    first, second, third = [
         (X.astype(np.float32) / 1000)
-        for X in [first, second, third, energy]
+        for X in [first, second, third]
     ]
 
     le = LabelEncoder()
     y = le.fit_transform(y)
 
-    first, second, third, y, energy = shuffle(first, second, third, y, energy,
-                                              random_state=0)
+    first, second, third, y, energy, x0, y0, theta, phi = shuffle(
+        first, second, third, y, energy, x0, y0, theta, phi, random_state=0)
+
+    # functions
+    sample_empirical_x0 = _build_sampler(x0.ravel())
+    sample_empirical_y0 = _build_sampler(y0.ravel())
+    sample_empirical_theta = _build_sampler(theta.ravel())
+    sample_empirical_phi = _build_sampler(phi.ravel())
 
     logger.info('Building discriminator')
 
@@ -217,8 +241,8 @@ if __name__ == '__main__':
                    Input(shape=sizes[2:4] + [1]),
                    Input(shape=sizes[4:] + [1])]
 
+    #input_properties = Input(shape=(5, )) # E,x0,y0,theta,phi
     input_energy = Input(shape=(1, ))
-
     features = []
     energies = []
 
@@ -274,8 +298,30 @@ if __name__ == '__main__':
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
-    discriminator_outputs = [fake, total_energy]
-    discriminator_losses = ['binary_crossentropy', 'mae']
+
+    if angle_pos:
+        raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
+        def regression_branch(raveled_images):
+            h = Dense(512)(raveled_images)
+            h = Dropout(0.2)(LeakyReLU()(h))
+            h = Dense(1024)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            h = Dense(1024)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            h = Dense(128)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            y = Dense(4, activation='linear', name='angpos_outputs')(h)
+            return y
+
+        angle_pos_branch = regression_branch(raveled_calo)
+        #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
+        discriminator_outputs = [fake, total_energy, angle_pos_branch]
+        discriminator_losses = ['binary_crossentropy', 'mae', 'mse']
+
+    else:
+        discriminator_outputs = [fake, total_energy]
+        discriminator_losses = ['binary_crossentropy', 'mae']
+        
     # ACGAN case
     if nb_classes > 1:
         logger.info('running in ACGAN for discriminator mode since found {} '
@@ -301,7 +347,13 @@ if __name__ == '__main__':
 
     latent = Input(shape=(latent_size, ), name='z')
     input_energy = Input(shape=(1, ), dtype='float32')
-    generator_inputs = [latent, input_energy]
+    input_properties_g = [
+        #        Input(shape=(1, ), name='E'),
+        Input(shape=(1, ), name='theta'),
+        Input(shape=(1, ), name='phi'),
+        Input(shape=(1, ), name='x0'),
+        Input(shape=(1, ), name='y0')] #E,theta,phi,x0,y0
+    generator_inputs = [latent, input_energy] + input_properties_g
 
     # ACGAN case
     if nb_classes > 1:
@@ -318,12 +370,39 @@ if __name__ == '__main__':
         hc = multiply([latent, emb])
 
         # requested energy comes in GeV
-        h = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
+        he = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
+        h = Concatenate()([
+            he,
+            #scale(input_energy, 100),
+            input_properties_g[0],
+            input_properties_g[1],
+            scale(input_properties_g[2], 50),
+            scale(input_properties_g[3], 50)
+        ])
         generator_inputs.append(image_class)
     else:
         # requested energy comes in GeV
-        h = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
-
+        if multiply_e:
+            he = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
+            h = Concatenate()([
+                he,
+                #latent,
+                #scale(input_energy, 100),
+                input_properties_g[0],
+                input_properties_g[1],
+                scale(input_properties_g[2], 50),
+                scale(input_properties_g[3], 50)
+            ])
+        else:
+            h = Concatenate()([
+                latent,
+                scale(input_energy, 100),
+                input_properties_g[0],
+                input_properties_g[1],
+                scale(input_properties_g[2], 50),
+                scale(input_properties_g[3], 50)
+            ])
+                 
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
     # linear last layer
     img_layer0 = build_generator(h, 3, 96)
@@ -362,6 +441,7 @@ if __name__ == '__main__':
         generator(generator_inputs) + [input_energy]
     )
 
+    #combined = Model(generator_inputs + [input_energy], combined_outputs, name='combined_model') # added input e
     combined = Model(generator_inputs, combined_outputs, name='combined_model')
     combined.compile(
         optimizer=Adam(lr=gen_lr, beta_1=adam_beta_1),
@@ -398,13 +478,27 @@ if __name__ == '__main__':
             image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
             label_batch = y[index * batch_size:(index + 1) * batch_size]
             energy_batch = energy[index * batch_size:(index + 1) * batch_size]
+            theta_batch = theta[index * batch_size:(index + 1) * batch_size]
+            phi_batch = phi[index * batch_size:(index + 1) * batch_size]
+            x0_batch = x0[index * batch_size:(index + 1) * batch_size]
+            y0_batch = y0[index * batch_size:(index + 1) * batch_size]
 
-            # energy_breakdown
-
+            # get random inputs for generator
             sampled_labels = np.random.randint(0, nb_classes, batch_size)
             sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
+            #sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
+            #sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
+            #sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
+            #sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
+            # sample from the empirical distribution
+            sampled_theta = sample_empirical_theta(batch_size)
+            sampled_phi = sample_empirical_phi(batch_size)
+            sampled_x0 = sample_empirical_x0(batch_size)
+            sampled_y0 = sample_empirical_y0(batch_size)
 
-            generator_inputs = [noise, sampled_energies]
+            generator_inputs = [
+                noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0
+            ]
             if nb_classes > 1:
                 # in the case of the ACGAN, we need to append the requested
                 # class to the pre-image of the generator
@@ -412,11 +506,20 @@ if __name__ == '__main__':
 
             generated_images = generator.predict(generator_inputs, verbose=0)
 
-            disc_outputs_real = [np.ones(batch_size), energy_batch]
-            disc_outputs_fake = [np.zeros(batch_size), sampled_energies]
+            if angle_pos:
+                disc_outputs_real = [
+                    np.ones(batch_size), energy_batch, np.concatenate((theta_batch, phi_batch, x0_batch, y0_batch), axis=-1)
+                ]
+                disc_outputs_fake = [
+                    np.zeros(batch_size), sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)
+                ]
+                # downweight the energy reconstruction loss ($\lambda_E$ in paper)
+                loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size), 0.01 * np.ones(batch_size)]
+            else: # removing regression on theta,phi,x0,yo
+                disc_outputs_real = [np.ones(batch_size), energy_batch]
+                disc_outputs_fake = [np.zeros(batch_size), sampled_energies]
+                loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size)]
 
-            # downweight the energy reconstruction loss ($\lambda_E$ in paper)
-            loss_weights = [np.ones(batch_size), 0.05 * np.ones(batch_size)]
             if nb_classes > 1:
                 # in the case of the ACGAN, we need to append the realrequested
                 # class to the target
@@ -453,10 +556,21 @@ if __name__ == '__main__':
             # train the discriminator
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
-
                 sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
-                combined_inputs = [noise, sampled_energies]
-                combined_outputs = [trick, sampled_energies]
+                sampled_theta = sample_empirical_theta(batch_size)
+                sampled_phi = sample_empirical_phi(batch_size)
+                sampled_x0 = sample_empirical_x0(batch_size)
+                sampled_y0 = sample_empirical_y0(batch_size)
+                #sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
+                #sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
+                #sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
+                #sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
+                #combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0, sampled_energies]
+                combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0]
+                if angle_pos:
+                    combined_outputs = [trick, sampled_energies, np.concatenate((sampled_theta, sampled_phi, sampled_x0, sampled_y0), axis=-1)]
+                else:
+                    combined_outputs = [trick, sampled_energies]
                 if nb_classes > 1:
                     sampled_labels = np.random.randint(0, nb_classes,
                                                        batch_size)

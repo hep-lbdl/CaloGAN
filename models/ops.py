@@ -10,7 +10,7 @@ author: Luke de Oliveira (lukedeo@manifold.ai)
 import keras.backend as K
 from keras.engine import InputSpec, Layer
 from keras import initializers, regularizers, constraints, activations
-from keras.layers import Lambda, ZeroPadding2D, LocallyConnected2D
+from keras.layers import Lambda, ZeroPadding2D, LocallyConnected2D, Conv2D
 from keras.layers.merge import concatenate, multiply
 
 import numpy as np
@@ -38,15 +38,15 @@ def inpainting_attention(primary, carryover, constant=-10):
 
     x = concatenate([primary, carryover], axis=-1)
     h = ZeroPadding2D((1, 1))(x)
-    lcn = LocallyConnected2D(
+    #    lcn = LocallyConnected2D(
+    lcn = Conv2D(
         filters=2,
         kernel_size=(3, 3),
-        bias_initializer=_initialize_bias(constant)
+        #bias_initializer=_initialize_bias(constant)
     )
 
     h = lcn(h)
     weights = Lambda(channel_softmax)(h)
-
     channel_sum = Lambda(K.sum, arguments={'axis': -1, 'keepdims': True})
 
     return channel_sum(multiply([x, weights]))
