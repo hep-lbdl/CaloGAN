@@ -40,6 +40,12 @@ def bit_flip(x, prob=0.05):
     x[selection] = 1 * np.logical_not(x[selection])
     return x
 
+# build some functions to be able to be able to bootstrap from the                                                                                                                 
+# empirical distributions                                                                                                                                                                 
+def _build_sampler(x):
+    def _(n):
+        return np.random.choice(x, size=n, replace=True).reshape((n, 1))
+    return _
 
 def get_parser():
     parser = argparse.ArgumentParser(
@@ -222,6 +228,12 @@ if __name__ == '__main__':
 
     first, second, third, y, energy, x0, y0, theta, phi = shuffle(
         first, second, third, y, energy, x0, y0, theta, phi, random_state=0)
+
+    # functions
+    sample_empirical_x0 = _build_sampler(x0.ravel())
+    sample_empirical_y0 = _build_sampler(y0.ravel())
+    sample_empirical_theta = _build_sampler(theta.ravel())
+    sample_empirical_phi = _build_sampler(phi.ravel())
 
     logger.info('Building discriminator')
 
@@ -474,10 +486,15 @@ if __name__ == '__main__':
             # get random inputs for generator
             sampled_labels = np.random.randint(0, nb_classes, batch_size)
             sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
-            sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
-            sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
-            sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
-            sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
+            #sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
+            #sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
+            #sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
+            #sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
+            # sample from the empirical distribution
+            sampled_theta = sample_empirical_theta(batch_size)
+            sampled_phi = sample_empirical_phi(batch_size)
+            sampled_x0 = sample_empirical_x0(batch_size)
+            sampled_y0 = sample_empirical_y0(batch_size)
 
             generator_inputs = [
                 noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0
@@ -540,10 +557,14 @@ if __name__ == '__main__':
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
                 sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
-                sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
-                sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
-                sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
-                sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
+                sampled_theta = sample_empirical_theta(batch_size)
+                sampled_phi = sample_empirical_phi(batch_size)
+                sampled_x0 = sample_empirical_x0(batch_size)
+                sampled_y0 = sample_empirical_y0(batch_size)
+                #sampled_theta = np.random.uniform(theta.min(), theta.max(), (batch_size, 1))
+                #sampled_phi = np.random.uniform(phi.min(), phi.max(),(batch_size, 1))
+                #sampled_x0 = np.random.uniform(-50, 50,(batch_size, 1))
+                #sampled_y0 = np.random.uniform(-50, 50,(batch_size, 1))
                 #combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0, sampled_energies]
                 combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0]
                 if angle_pos:

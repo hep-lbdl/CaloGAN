@@ -42,12 +42,11 @@ def inpainting_attention(primary, carryover, constant=-10):
     lcn = Conv2D(
         filters=2,
         kernel_size=(3, 3),
-        #        bias_initializer=_initialize_bias(constant)
+        #bias_initializer=_initialize_bias(constant)
     )
 
     h = lcn(h)
     weights = Lambda(channel_softmax)(h)
-
     channel_sum = Lambda(K.sum, arguments={'axis': -1, 'keepdims': True})
 
     return channel_sum(multiply([x, weights]))
