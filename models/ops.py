@@ -28,23 +28,30 @@ def scale(x, v):
 
 def inpainting_attention(primary, carryover, constant=-10):
 
-    def _initialize_bias(const=-5):
-        def _(shape, dtype=None):
-            assert len(shape) == 3, 'must be a 3D shape'
-            x = np.zeros(shape)
-            x[:, :, -1] = const
-            return x
-        return _
+    # def _initialize_bias(const=-5):
+    #     def _(shape, dtype=None):
+    #         assert len(shape) == 3, 'must be a 3D shape'
+    #         x = np.zeros(shape)
+    #         x[:, :, -1] = const
+    #         return x
+    #     return _
 
     x = concatenate([primary, carryover], axis=-1)
     h = ZeroPadding2D((1, 1))(x)
-    lcn = LocallyConnected2D(
+    # lcn = LocallyConnected2D(
+    #     filters=2,
+    #     kernel_size=(3, 3),
+    #     bias_initializer=_initialize_bias(constant)
+    # )
+
+    # h = lcn(h)
+
+    cnv = LocallyConnected2D(
         filters=2,
         kernel_size=(3, 3),
-        bias_initializer=_initialize_bias(constant)
     )
 
-    h = lcn(h)
+    h = cnv(h)
     weights = Lambda(channel_softmax)(h)
 
     channel_sum = Lambda(K.sum, arguments={'axis': -1, 'keepdims': True})
