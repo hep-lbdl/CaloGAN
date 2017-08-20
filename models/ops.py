@@ -10,7 +10,7 @@ author: Luke de Oliveira (lukedeo@manifold.ai)
 import keras.backend as K
 from keras.engine import InputSpec, Layer
 from keras import initializers, regularizers, constraints, activations
-from keras.layers import Lambda, ZeroPadding2D, LocallyConnected2D
+from keras.layers import Lambda, ZeroPadding2D, LocallyConnected2D, Conv2D
 from keras.layers.merge import concatenate, multiply
 
 import numpy as np
@@ -46,8 +46,8 @@ def inpainting_attention(primary, carryover, constant=-10):
 
     # h = lcn(h)
 
-    cnv = LocallyConnected2D(
-        filters=2,
+    cnv = Conv2D(
+        filters=16,
         kernel_size=(3, 3),
     )
 
