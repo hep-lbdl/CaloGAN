@@ -47,7 +47,7 @@ def inpainting_attention(primary, carryover, constant=-10):
     # h = lcn(h)
 
     cnv = Conv2D(
-        filters=16,
+        filters=2,
         kernel_size=(3, 3),
     )
 
