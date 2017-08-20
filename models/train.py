@@ -75,6 +75,8 @@ def get_parser():
     parser.add_argument('--debug', action='store_true',
                         help='Whether to run debug level logging')
 
+    parser.add_argument('--nb-samples', type=int, help='number of samples')
+
     parser.add_argument('--angle-pos', action='store_true',
                         help='Whether to include angle and position info and regression')
 
@@ -172,16 +174,18 @@ if __name__ == '__main__':
         d = h5py.File(datafile, 'r')
 
         # make our calo images channels-last
-        first = np.expand_dims(d['layer_0'][:], -1)
-        second = np.expand_dims(d['layer_1'][:], -1)
-        third = np.expand_dims(d['layer_2'][:], -1)
-        energy = d['energy'][:].reshape(-1, 1)  # GeV
-        x0 = d['x0'][:].reshape(-1, 1)
-        y0 = d['y0'][:].reshape(-1, 1)
+        first = np.expand_dims(d['layer_0'][:parse_args.nb_samples], -1)
+        second = np.expand_dims(d['layer_1'][:parse_args.nb_samples], -1)
+        third = np.expand_dims(d['layer_2'][:parse_args.nb_samples], -1)
+        energy = d['energy'][:parse_args.nb_samples].reshape(-1, 1)  # GeV
+        x0 = d['x0'][:parse_args.nb_samples].reshape(-1, 1)
+        y0 = d['y0'][:parse_args.nb_samples].reshape(-1, 1)
         # transform momenta to angles
-        p = np.sqrt(d['px'][:]**2 + d['py'][:]**2 + d['pz'][:]**2)
-        theta = np.arccos(d['py'][:] / p)
-        phi = np.arctan(-d['px'][:] / d['pz'][:])
+        p = np.sqrt(d['px'][:parse_args.nb_samples]**2 + d['py']
+                    [:parse_args.nb_samples]**2 + d['pz'][:parse_args.nb_samples]**2)
+        theta = np.arccos(d['py'][:parse_args.nb_samples] / p)
+        phi = np.arctan(-d['px'][:parse_args.nb_samples] /
+                        d['pz'][:parse_args.nb_samples])
 
         sizes = [
             first.shape[1], first.shape[2],
