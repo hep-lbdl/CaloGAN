@@ -70,8 +70,8 @@ def get_parser():
     parser.add_argument('--prog-bar', action='store_true',
                         help='Whether or not to use a progress bar')
 
-    parser.add_argument('--no-attn', action='store_true',
-                        help='Whether to turn off the layer to layer attn.')
+    parser.add_argument('--attention', type=string,
+                        help='Type of attention mechanism to connect layers in G')
 
     parser.add_argument('--debug', action='store_true',
                         help='Whether to run debug level logging')
@@ -131,23 +131,21 @@ if __name__ == '__main__':
     batch_size = parse_args.batch_size
     latent_size = parse_args.latent_size
     verbose = parse_args.prog_bar
-    no_attn = parse_args.no_attn
-
+    att_type = parse_args.attention
     disc_lr = parse_args.disc_lr
     gen_lr = parse_args.gen_lr
     adam_beta_1 = parse_args.adam_beta
-
     yaml_file = parse_args.dataset
 
     logger.debug('parameter configuration:')
 
-    logger.debug('number of epochs = {}'.format(nb_epochs))
-    logger.debug('batch size = {}'.format(batch_size))
-    logger.debug('latent size = {}'.format(latent_size))
-    logger.debug('progress bar enabled = {}'.format(verbose))
-    logger.debug('Using attention = {}'.format(no_attn == False))
-    logger.debug('discriminator learning rate = {}'.format(disc_lr))
-    logger.debug('generator learning rate = {}'.format(gen_lr))
+    logger.debug('Number of epochs = {}'.format(nb_epochs))
+    logger.debug('Batch size = {}'.format(batch_size))
+    logger.debug('Latent size = {}'.format(latent_size))
+    logger.debug('Progress bar enabled = {}'.format(verbose))
+    logger.debug('Attention type = {}'.format(att_type))
+    logger.debug('Discriminator learning rate = {}'.format(disc_lr))
+    logger.debug('Generator learning rate = {}'.format(gen_lr))
     logger.debug('Adam $\beta_1$ parameter = {}'.format(adam_beta_1))
     logger.debug('Will read YAML spec from {}'.format(yaml_file))
 
@@ -164,28 +162,21 @@ if __name__ == '__main__':
         logger.debug('class {} <= {}'.format(name, pth))
 
     def _load_data(particle, datafile):
-
         import h5py
-
         d = h5py.File(datafile, 'r')
-
         # make our calo images channels-last
         first = np.expand_dims(d['layer_0'][:], -1)
         second = np.expand_dims(d['layer_1'][:], -1)
         third = np.expand_dims(d['layer_2'][:], -1)
         # convert to MeV
         energy = d['energy'][:].reshape(-1, 1) * 1000
-
         sizes = [
             first.shape[1], first.shape[2],
             second.shape[1], second.shape[2],
             third.shape[1], third.shape[2]
         ]
-
         y = [particle] * first.shape[0]
-
         d.close()
-
         return first, second, third, y, energy, sizes
 
     logger.debug('loading data from {} files'.format(nb_classes))
@@ -205,18 +196,22 @@ if __name__ == '__main__':
         for X in [first, second, third, energy]
     ]
 
+    # encode labels and encode them into categorical classes
     le = LabelEncoder()
     y = le.fit_transform(y)
 
+    # shuffle data
     first, second, third, y, energy = shuffle(first, second, third, y, energy,
                                               random_state=0)
 
+    #################
+    # DISCRIMINATOR #
+    #################
     logger.info('Building discriminator')
 
     calorimeter = [Input(shape=sizes[:2] + [1]),
                    Input(shape=sizes[2:4] + [1]),
                    Input(shape=sizes[4:] + [1])]
-
     input_energy = Input(shape=(1, ))
 
     features = []
@@ -230,7 +225,6 @@ if __name__ == '__main__':
             sparsity=True,
             sparsity_mbd=True
         ))
-
         energies.append(calculate_energy(calorimeter[l]))
 
     features = concatenate(features)
@@ -297,6 +291,9 @@ if __name__ == '__main__':
         loss=discriminator_losses
     )
 
+    #############
+    # GENERATOR #
+    #############
     logger.info('Building generator')
 
     latent = Input(shape=(latent_size, ), name='z')
@@ -307,7 +304,7 @@ if __name__ == '__main__':
     if nb_classes > 1:
         logger.info('running in ACGAN for generator mode since found {} '
                     'classes'.format(nb_classes))
-
+        
         # label of requested class
         image_class = Input(shape=(1, ), dtype='int32')
         lookup_table = Embedding(nb_classes, latent_size, input_length=1,
@@ -320,6 +317,7 @@ if __name__ == '__main__':
         # requested energy comes in GeV
         h = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
         generator_inputs.append(image_class)
+
     else:
         # requested energy comes in GeV
         h = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
@@ -330,7 +328,7 @@ if __name__ == '__main__':
     img_layer1 = build_generator(h, 12, 12)
     img_layer2 = build_generator(h, 12, 6)
 
-    if not no_attn:
+    if att_type is not None:
 
         logger.info('using attentional mechanism')
 
