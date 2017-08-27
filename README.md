@@ -1,12 +1,14 @@
 # CaloGAN
 Simulating 3D High Energy Particle Showers in Multi-Layer Electromagnetic Calorimeters with Generative Adversarial Networks.
 
+This repository contains what you'll need to reproduce M. Paganini ([@mickypaganini](https://github.com/mickypaganini)), L. de Oliveira ([@lukedeo](https://github.com/lukedeo)), B. Nachman ([@bnachman](https://github.com/bnachman)), _CaloGAN: Simulating 3D High Energy Particle Showers in Multi-Layer Electromagnetic Calorimeters with Generative Adversarial Networks_ [[`arXiv:1705.02355`](https://arxiv.org/abs/1705.02355)].
+
+You are more than welcome to use the open data and open-source software provided here for any of your projects, but we kindly ask you that you please cite them using the DOIs provided below:
+
 | Asset  | Location |
 | ------------- | ------------- |
-| Training Data (GEANT showers) | [![DOI](https://zenodo.org/badge/DOI/10.17632/pvn3xc3wy5.1.svg)](https://doi.org/10.17632/pvn3xc3wy5.1)|
+| Training Data (GEANT4 showers, ⟂ to center) | [![DOI](https://zenodo.org/badge/DOI/10.17632/pvn3xc3wy5.1.svg)](https://doi.org/10.17632/pvn3xc3wy5.1)|
 | Source Code (this repo!) | [![DOI](https://zenodo.org/badge/82329392.svg)](https://zenodo.org/badge/latestdoi/82329392)|
-
-This repository contains what you'll need to reproduce M. Paganini ([@mickypaganini](https://github.com/mickypaganini)), L. de Oliveira ([@lukedeo](https://github.com/lukedeo)), B. Nachman ([@bnachman](https://github.com/bnachman)), _CaloGAN: Simulating 3D High Energy Particle Showers in Multi-Layer Electromagnetic Calorimeters with Generative Adversarial Networks_ [[`arXiv:1705.02355`](https://arxiv.org/abs/1705.02355)].
 
 ## Goal
 The goal of this project is to help physicists at CERN speed up their simulations by encoding the most computationally expensive portion of the simulation process (i.e., showering in the EM calorimeter) in a deep generative model.
@@ -27,7 +29,7 @@ This repository contains three main folders: `generation`, `models` and `analysi
 
 `analysis` contains Jupyter Notebooks used to evaluate performance and produce all plots for the paper.
 
-## Generation on PDSF
+## GEANT4 Generation on PDSF
 
 On [PDSF](http://www.nersc.gov/users/computational-systems/pdsf/), your should run all generation code that outputs big files to a scratch space. To make a scratch environment, run `mkdir /global/projecta/projectdirs/atlas/{your-username}`, and for convenience, link to home via `ln -s /global/projecta/projectdirs/atlas/{your-username} ~/scratch`.
 
@@ -91,6 +93,12 @@ python -m models.train models/particles.yaml
 ```
 
 We recommend running `python -m models.train -h` at least once to see all the parameters one can change. 
+
+## Performance Analysis
+
+Performance evaluation is done both from a qualitative and a quantitative standpoint. The jupyter notebook available in the `analysis` folder will guide you through our plotting conventions.
+
+For quick handling, we have pre-extracted the shower shape variables into a pandas dataframe (stored as HDF5) and made it available available [on S3](https://s3-us-west-2.amazonaws.com/lukedeo-data/lbl/calogan/shower-shapes.h5). To load, you can simply do `pd.read_hdf('path/to/shower-shapes.h5')`.
 
 ## Copyright Notice
  

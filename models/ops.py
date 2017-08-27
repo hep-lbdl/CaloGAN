@@ -26,7 +26,7 @@ def scale(x, v):
     return Lambda(lambda _: _ / v)(x)
 
 
-def inpainting_attention(primary, carryover, constant=-10):
+def inpainting_attention(primary, carryover, att_type, constant=-10):
 
     def _initialize_bias(const=-5):
         def _(shape, dtype=None):
@@ -38,14 +38,22 @@ def inpainting_attention(primary, carryover, constant=-10):
 
     x = concatenate([primary, carryover], axis=-1)
     h = ZeroPadding2D((1, 1))(x)
-    #    lcn = LocallyConnected2D(
-    lcn = Conv2D(
-        filters=2,
-        kernel_size=(3, 3),
-        #bias_initializer=_initialize_bias(constant)
-    )
 
-    h = lcn(h)
+    if att_type == 'conv':
+        attention = Conv2D(
+            filters=2,
+            kernel_size=(3, 3),
+        )
+    elif att_type == 'lc':
+        attention = LocallyConnected2D(
+            filters=2,
+            kernel_size=(3, 3),
+            bias_initializer=_initialize_bias(constant)
+        )
+    else:
+        raise ValueError('Inpainting mechanism is definied only for attention types "lc" and "conv"')
+    
+    h = attention(h)
     weights = Lambda(channel_softmax)(h)
     channel_sum = Lambda(K.sum, arguments={'axis': -1, 'keepdims': True})
 
