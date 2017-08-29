@@ -104,7 +104,8 @@ if __name__ == '__main__':
     # delay the imports so running train.py -h doesn't take 5,234,807 years
     import keras.backend as K
     from keras.layers import (Activation, AveragePooling2D, Dense, Embedding, LeakyReLU,
-                              Flatten, Input, Lambda, UpSampling2D, Concatenate, Dropout)
+                              Flatten, Input, Lambda, UpSampling2D, Concatenate, Dropout,
+                              Conv2D)
     from keras.layers.merge import add, concatenate, multiply
     from keras.models import Model
     from keras.optimizers import Adam
