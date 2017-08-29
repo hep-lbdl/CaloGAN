@@ -75,7 +75,7 @@ def get_parser():
     parser.add_argument('--prog-bar', action='store_true',
                         help='Whether or not to use a progress bar')
 
-    parser.add_argument('--attention', type=string,
+    parser.add_argument('--attention', type=str,
                         help='Type of attention mechanism to connect layers in G')
 
     parser.add_argument('--debug', action='store_true',
@@ -207,6 +207,13 @@ if __name__ == '__main__':
         ]
     ]
 
+    max_x = np.max(abs(x0))
+    max_y = np.max(abs(y0))
+    max_e = np.max(energy)
+
+    logger.info('Max x = {}; max y = {}; max energy = {}'.format(
+        max_x, max_y, max_e))
+    
     # TO-DO: check that all sizes match, so I could be taking any of them
     sizes = sizes[:6].tolist()
 
@@ -339,7 +346,8 @@ if __name__ == '__main__':
         optimizer=Adam(lr=disc_lr, beta_1=adam_beta_1),
         loss=discriminator_losses
     )
-
+    discriminator.summary(print_fn=lambda x : logger.debug(x))
+    
     #############
     # GENERATOR #
     #############
@@ -376,8 +384,8 @@ if __name__ == '__main__':
             #scale(input_energy, 100),
             input_properties_g[0],
             input_properties_g[1],
-            scale(input_properties_g[2], 50),
-            scale(input_properties_g[3], 50)
+            scale(input_properties_g[2], max_x),
+            scale(input_properties_g[3], max_y)
         ])
         generator_inputs.append(image_class)
 
@@ -391,8 +399,8 @@ if __name__ == '__main__':
                 #scale(input_energy, 100),
                 input_properties_g[0],
                 input_properties_g[1],
-                scale(input_properties_g[2], 50),
-                scale(input_properties_g[3], 50)
+                scale(input_properties_g[2], max_x),
+                scale(input_properties_g[3], max_y)
             ])
         else:
             h = Concatenate()([
@@ -400,28 +408,54 @@ if __name__ == '__main__':
                 scale(input_energy, 100),
                 input_properties_g[0],
                 input_properties_g[1],
-                scale(input_properties_g[2], 50),
-                scale(input_properties_g[3], 50)
+                scale(input_properties_g[2], max_x),
+                scale(input_properties_g[3], max_y)
             ])
-                 
-    # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
-    # linear last layer
-    img_layer0 = build_generator(h, 3, 96)
-    img_layer1 = build_generator(h, 12, 12)
-    img_layer2 = build_generator(h, 12, 6)
 
-    if att_type is not None:
+    if att_type == 'convlstm':
+        # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
+        # linear last layer
+        from architectures import build_large_generator as build_generator
+        import tensorflow as tf
+        img_layer0 = build_generator(h, 12, 96)
+        img_layer1 = build_generator(h, 12, 96)
+        img_layer2 = build_generator(h, 12, 96)
+        
+        from keras.layers import ConvLSTM2D, Bidirectional
+        expand_dims = Lambda(lambda x : K.expand_dims(x, 1))
+        attention =                         ConvLSTM2D(filters=1, kernel_size=2, strides=1, padding='same', implementation=1, return_sequences=True)(
+                            concatenate([expand_dims(img_layer0), expand_dims(img_layer1), expand_dims(img_layer2)], axis=1))
+        def timedistributed_split(x):
+            nb_timesteps = K.int_shape(x)[1]
+            return [Lambda(lambda t: t[:, ix])(x) for ix in range(nb_timesteps)]
+        
+        img_layer0, img_layer1, img_layer2 = timedistributed_split(attention)
 
-        logger.info('using attentional mechanism')
+        # TODO: add argument somewhere for pool_type, and do something like:
+        pool_type = AveragePooling2D 
+        img_layer0 = pool_type((4, 1))(img_layer0)
+        img_layer1 = pool_type((1, 8))(img_layer1)
+        img_layer2 = pool_type((1, 16))(img_layer2)
 
-        # resizes from (3, 96) => (12, 12)
-        zero2one = AveragePooling2D(pool_size=(1, 8))(
-            UpSampling2D(size=(4, 1))(img_layer0))
-        img_layer1 = inpainting_attention(img_layer1, zero2one)
+    else:
+        # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
+        # linear last layer
+        img_layer0 = build_generator(h, 3, 96)
+        img_layer1 = build_generator(h, 12, 12)
+        img_layer2 = build_generator(h, 12, 6)
 
-        # resizes from (12, 12) => (12, 6)
-        one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
-        img_layer2 = inpainting_attention(img_layer2, one2two)
+        if att_type is not None:
+
+            logger.info('using attentional mechanism')
+            
+            # resizes from (3, 96) => (12, 12)
+            zero2one = AveragePooling2D(pool_size=(1, 8))(
+                UpSampling2D(size=(4, 1))(img_layer0))
+            img_layer1 = inpainting_attention(img_layer1, zero2one, att_type=att_type)
+            
+            # resizes from (12, 12) => (12, 6)
+            one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
+            img_layer2 = inpainting_attention(img_layer2, one2two, att_type=att_type)
 
     generator_outputs = [
         Activation('relu')(img_layer0),
@@ -430,12 +464,16 @@ if __name__ == '__main__':
     ]
 
     generator = Model(generator_inputs, generator_outputs)
-
+        
     generator.compile(
         optimizer=Adam(lr=gen_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
+    generator.summary(print_fn=lambda x : logger.debug(x))
 
+    ############
+    # COMBINED #
+    ############
     discriminator.trainable = False
 
     combined_outputs = discriminator(

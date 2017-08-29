@@ -113,6 +113,15 @@ def sparsity_level(x):
         K.cast(x > 0.0, K.floatx()), axis=range(1, len(_shape))
     ), (-1, 1)) / total
 
+def soft_sparsity_level(x):
+    power = 5.0
+    _shape = K.get_variable_shape(x)
+    shape = K.shape(x)
+    total = K.cast(K.prod(shape[1:]), K.floatx())
+    a = K.abs(x)
+    ss = K.softsign(K.pow(a, power) + K.pow(a, 1 / power))
+    ss = K.pow(ss, 1 / power)
+    return K.reshape(K.sum(ss, axis=list(range(1, len(_shape)))), (-1, 1)) / total
 
 def sparsity_output_shape(input_shape):
     shape = list(input_shape)

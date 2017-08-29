@@ -10,14 +10,14 @@ import keras.backend as K
 from keras.initializers import constant
 from keras.layers import (Dense, Reshape, Conv2D, LeakyReLU, BatchNormalization,
                           LocallyConnected2D, Activation, ZeroPadding2D,
-                          Dropout, Lambda, Flatten)
+                          Dropout, Lambda, Flatten, UpSampling2D)
 from keras.layers.merge import concatenate, multiply
 import numpy as np
 
 
 from ops import (minibatch_discriminator, minibatch_output_shape,
-                 Dense3D, sparsity_level, sparsity_output_shape)
-
+                 Dense3D, sparsity_output_shape)
+from ops import soft_sparsity_level as sparsity_level
 
 def sparse_softmax(x):
     x = K.relu(x)
@@ -53,6 +53,31 @@ def build_generator(x, nb_rows, nb_cols):
 
     x = LocallyConnected2D(1, (2, 2), use_bias=False,
                            kernel_initializer='glorot_normal')(x)
+    #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
+    return x
+
+def build_large_generator(x, nb_rows, nb_cols):
+    x = Dense((nb_rows + 4) / 4 * (nb_cols + 4) / 4 * 4)(x)
+    x = Reshape(((nb_rows + 4) / 4, (nb_cols + 4) / 4, 4))(x)
+
+    # 4x25 --> 8x50
+    x = UpSampling2D(size=(2, 2))(x)
+
+    # 8x50 --> 7x49
+    x = Conv2D(16, (2, 2), padding='valid', kernel_initializer='he_uniform')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    # 7x49 --> 14x98
+    x = UpSampling2D(size=(2, 2))(x)
+
+    # 14x98 --> 13x97
+    x = LocallyConnected2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+    #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+    x = LeakyReLU()(x)
+
+    # 13x97 --> 12x96
+    x = LocallyConnected2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_normal')(x)
     #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
     return x
 
