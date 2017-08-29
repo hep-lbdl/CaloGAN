@@ -413,8 +413,8 @@ if __name__ == '__main__':
     # linear last layer
 
     from keras.initializers import RandomNormal, Constant
-    blur = Conv2D(1, (4, 4), padding='same', use_bias=False,
-                  kernel_initializer=Constant(1 / 16.))
+    blur = Conv2D(1, (3, 3), padding='same', use_bias=False,
+                  kernel_initializer=Constant(1 / 9.))
     blur.trainable = False
 
     img_layer0 = build_generator(h, 3, 96)
@@ -422,7 +422,7 @@ if __name__ == '__main__':
     img_layer0 = Conv2D(32, (2, 11), padding='same')(img_layer0)
     img_layer0 = LeakyReLU()(img_layer0)
     img_layer0 = Conv2D(1, (2, 5), padding='same')(img_layer0)
-    img_layer0 = blur(img_layer0)
+    # img_layer0 = blur(img_layer0)
 
     img_layer1 = build_generator(h, 12, 12)
 
