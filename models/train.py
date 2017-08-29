@@ -424,6 +424,7 @@ if __name__ == '__main__':
     img_layer1 = Conv2D(32, (7, 7), padding='same')(img_layer1)
     img_layer1 = LeakyReLU()(img_layer1)
     img_layer1 = Conv2D(1, (5, 5), padding='same',
+                        kernel_initializer=RandomNormal(2, 0.02),
                         bias_initializer=RandomNormal(3, 0.2))(img_layer1)
 
     img_layer2 = build_generator(h, 12, 6)
