@@ -411,6 +411,8 @@ if __name__ == '__main__':
 
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
     # linear last layer
+
+    from keras.initializers import RandomNormal
     img_layer0 = build_generator(h, 3, 96)
 
     img_layer0 = Conv2D(32, (2, 11), padding='same')(img_layer0)
@@ -421,7 +423,8 @@ if __name__ == '__main__':
 
     img_layer1 = Conv2D(32, (7, 7), padding='same')(img_layer1)
     img_layer1 = LeakyReLU()(img_layer1)
-    img_layer1 = Conv2D(1, (5, 5), padding='same')(img_layer1)
+    img_layer1 = Conv2D(1, (5, 5), padding='same',
+                        bias_initializer=RandomNormal(3, 0.2))(img_layer1)
 
     img_layer2 = build_generator(h, 12, 6)
 
