@@ -10,7 +10,7 @@ import keras.backend as K
 from keras.initializers import constant
 from keras.layers import (Dense, Reshape, Conv2D, LeakyReLU, BatchNormalization,
                           LocallyConnected2D, Activation, ZeroPadding2D,
-                          Dropout, Lambda, Flatten)
+                          Dropout, Lambda, Flatten, Conv2DTranspose)
 from keras.layers.merge import concatenate, multiply
 import numpy as np
 
@@ -58,6 +58,59 @@ def build_generator(x, nb_rows, nb_cols):
 
     x = Conv2D(1, (2, 2), use_bias=True)(x)
     #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
+    return x
+
+
+def build_layer0_generator(x, nb_rows, nb_cols):
+
+    x = Dense((nb_rows + 2) * (nb_cols // 4) * 256)(x)
+    x = Reshape((nb_rows + 2, (nb_cols // 4), 256))(x)
+
+    x = Conv2DTranspose(128, (2, 5), strides=(1, 2), padding='same')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2DTranspose(64, (2, 4), strides=(1, 2))(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2D(1, (4, 3), padding='valid')(x)
+    return x
+
+
+def build_layer1_generator(x, nb_rows, nb_cols):
+
+    x = Dense(((nb_rows // 4) + 1) * ((nb_cols // 4) + 1) * 1024)(x)
+    x = Reshape(((nb_rows // 4) + 1, (nb_cols // 4) + 1, 1024))(x)
+
+    x = Conv2DTranspose(256, (4, 4), strides=(2, 2), padding='same')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2D(1, (5, 5), padding='valid')(x)
+
+    return x
+
+
+def build_layer2_generator(x, nb_rows, nb_cols):
+
+    x = Dense(((nb_rows // 4)) * ((nb_cols // 2)) * 1024)(x)
+    x = Reshape(((nb_rows // 4), (nb_cols // 2), 1024))(x)
+
+    x = Conv2DTranspose(256, (4, 4), strides=(2, 2), padding='same')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2DTranspose(64, (5, 5), strides=(2, 1), padding='same')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2D(1, (2, 2), padding='same')(x)
+
     return x
 
 

@@ -412,48 +412,55 @@ if __name__ == '__main__':
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
     # linear last layer
 
-    import numpy as np
-    import scipy.stats as st
+    from architectures import (build_layer0_generator,
+                               build_layer1_generator, build_layer2_generator)
 
-    def gkern(kernlen=7, nsig=3):
-        interval = (2 * nsig + 1.) / (kernlen)
-        x = np.linspace(-nsig - interval / 2., nsig + interval / 2., kernlen + 1)
-        kern1d = np.diff(st.norm.cdf(x))
-        kernel_raw = np.sqrt(np.outer(kern1d, kern1d))
-        kernel = kernel_raw / kernel_raw.sum()
-        return kernel
+    img_layer0 = build_layer0_generator(h, 3, 96)
+    img_layer1 = build_layer1_generator(h, 12, 12)
+    img_layer2 = build_layer2_generator(h, 12, 6)
+# -----
+    # import numpy as np
+    # import scipy.stats as st
 
-    kern = gkern(4)
+    # def gkern(kernlen=7, nsig=3):
+    #     interval = (2 * nsig + 1.) / (kernlen)
+    #     x = np.linspace(-nsig - interval / 2., nsig + interval / 2., kernlen + 1)
+    #     kern1d = np.diff(st.norm.cdf(x))
+    #     kernel_raw = np.sqrt(np.outer(kern1d, kern1d))
+    #     kernel = kernel_raw / kernel_raw.sum()
+    #     return kernel
 
-    kern = np.expand_dims(np.expand_dims(kern, -1), -1)
+    # kern = gkern(4)
 
-    from keras.initializers import RandomNormal, Constant
-    blur = Conv2D(1, (4, 4), padding='same', use_bias=False,
-                  # kernel_initializer=Constant(1 / 9.)
-                  weights=[kern])
-    blur.trainable = False
+    # kern = np.expand_dims(np.expand_dims(kern, -1), -1)
 
-    img_layer0 = build_generator(h, 3, 96)
+    # from keras.initializers import RandomNormal, Constant
+    # blur = Conv2D(1, (4, 4), padding='same', use_bias=False,
+    #               # kernel_initializer=Constant(1 / 9.)
+    #               weights=[kern])
+    # blur.trainable = False
 
-    img_layer0 = Conv2D(32, (2, 11), padding='same')(img_layer0)
-    img_layer0 = LeakyReLU()(img_layer0)
-    img_layer0 = Conv2D(1, (2, 5), padding='same')(img_layer0)
-    # img_layer0 = blur(img_layer0)
+    # img_layer0 = build_generator(h, 3, 96)
 
-    img_layer1 = build_generator(h, 12, 12)
+    # img_layer0 = Conv2D(32, (2, 11), padding='same')(img_layer0)
+    # img_layer0 = LeakyReLU()(img_layer0)
+    # img_layer0 = Conv2D(1, (2, 5), padding='same')(img_layer0)
+    # # img_layer0 = blur(img_layer0)
 
-    img_layer1 = Conv2D(32, (7, 7), padding='same')(img_layer1)
-    img_layer1 = LeakyReLU()(img_layer1)
-    img_layer1 = Conv2D(1, (5, 5), padding='same',
-                        bias_initializer=RandomNormal(3, 0.2))(img_layer1)
-    img_layer1 = blur(img_layer1)
+    # img_layer1 = build_generator(h, 12, 12)
 
-    img_layer2 = build_generator(h, 12, 6)
+    # img_layer1 = Conv2D(32, (7, 7), padding='same')(img_layer1)
+    # img_layer1 = LeakyReLU()(img_layer1)
+    # img_layer1 = Conv2D(1, (5, 5), padding='same',
+    #                     bias_initializer=RandomNormal(3, 0.2))(img_layer1)
+    # img_layer1 = blur(img_layer1)
 
-    img_layer2 = Conv2D(32, (7, 4), padding='same')(img_layer2)
-    img_layer2 = LeakyReLU()(img_layer2)
-    img_layer2 = Conv2D(1, (5, 3), padding='same')(img_layer2)
+    # img_layer2 = build_generator(h, 12, 6)
 
+    # img_layer2 = Conv2D(32, (7, 4), padding='same')(img_layer2)
+    # img_layer2 = LeakyReLU()(img_layer2)
+    # img_layer2 = Conv2D(1, (5, 3), padding='same')(img_layer2)
+# -----
     if not no_attn:
 
         logger.info('using attentional mechanism')
