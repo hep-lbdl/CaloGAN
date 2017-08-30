@@ -72,7 +72,7 @@ def build_layer0_generator(x, nb_rows, nb_cols):
 
     x = Conv2DTranspose(64, (2, 4), strides=(1, 2))(x)
     x = LeakyReLU()(x)
-    x = BatchNormalization()(x)
+    # x = BatchNormalization()(x)
 
     x = Conv2D(1, (4, 3), padding='valid')(x)
     return x
@@ -89,7 +89,7 @@ def build_layer1_generator(x, nb_rows, nb_cols):
 
     x = Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same')(x)
     x = LeakyReLU()(x)
-    x = BatchNormalization()(x)
+    # x = BatchNormalization()(x)
 
     x = Conv2D(1, (5, 5), padding='valid')(x)
 
@@ -107,7 +107,7 @@ def build_layer2_generator(x, nb_rows, nb_cols):
 
     x = Conv2DTranspose(64, (5, 5), strides=(2, 1), padding='same')(x)
     x = LeakyReLU()(x)
-    x = BatchNormalization()(x)
+    # x = BatchNormalization()(x)
 
     x = Conv2D(1, (2, 2), padding='same')(x)
 
