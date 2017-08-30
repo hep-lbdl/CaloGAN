@@ -423,12 +423,12 @@ if __name__ == '__main__':
         kernel = kernel_raw / kernel_raw.sum()
         return kernel
 
-    kern = gkern(9)
+    kern = gkern(4)
 
     kern = np.expand_dims(np.expand_dims(kern, -1), -1)
 
     from keras.initializers import RandomNormal, Constant
-    blur = Conv2D(1, (9, 9), padding='same', use_bias=False,
+    blur = Conv2D(1, (4, 4), padding='same', use_bias=False,
                   # kernel_initializer=Constant(1 / 9.)
                   weights=[kern])
     blur.trainable = False
