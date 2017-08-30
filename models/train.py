@@ -412,9 +412,21 @@ if __name__ == '__main__':
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
     # linear last layer
 
+    import numpy as np
+    import scipy.stats as st
+
+    def gkern(kernlen=7, nsig=3):
+        interval = (2 * nsig + 1.) / (kernlen)
+        x = np.linspace(-nsig - interval / 2., nsig + interval / 2., kernlen + 1)
+        kern1d = np.diff(st.norm.cdf(x))
+        kernel_raw = np.sqrt(np.outer(kern1d, kern1d))
+        kernel = kernel_raw / kernel_raw.sum()
+        return kernel
+
     from keras.initializers import RandomNormal, Constant
-    blur = Conv2D(1, (3, 3), padding='same', use_bias=False,
-                  kernel_initializer=Constant(1 / 9.))
+    blur = Conv2D(1, (9, 9), padding='same', use_bias=False,
+                  # kernel_initializer=Constant(1 / 9.)
+                  weights=[gkern(9)])
     blur.trainable = False
 
     img_layer0 = build_generator(h, 3, 96)
