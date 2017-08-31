@@ -419,9 +419,13 @@ if __name__ == '__main__':
     from architectures import (build_layer0_generator,
                                build_layer1_generator, build_layer2_generator)
 
-    img_layer0 = build_layer0_generator(h, 3, 96)
-    img_layer1 = build_layer1_generator(h, 12, 12)
-    img_layer2 = build_layer2_generator(h, 12, 6)
+    # img_layer0 = build_layer0_generator(h, 3, 96)
+    # img_layer1 = build_layer1_generator(h, 12, 12)
+    # img_layer2 = build_layer2_generator(h, 12, 6)
+
+    img_layer0 = build_generator(h, 3, 96)
+    img_layer1 = build_generator(h, 12, 12)
+    img_layer2 = build_generator(h, 12, 6)
 # -----
     # import numpy as np
     # import scipy.stats as st

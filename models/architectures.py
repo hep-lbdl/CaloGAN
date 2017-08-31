@@ -46,6 +46,28 @@ def build_generator(x, nb_rows, nb_cols):
     x = Dense((nb_rows + 2) * (nb_cols + 2) * 64)(x)
     x = Reshape((nb_rows + 2, nb_cols + 2, 64))(x)
 
+    x = LocallyConnected2D(64, (2, 2))(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2D(256, (2, 2), padding='same')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2D(32, (2, 2), padding='same')(x)
+    #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+    x = LeakyReLU()(x)
+
+    x = Conv2D(1, (2, 2), use_bias=True)(x)
+    #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
+    return x
+
+
+def build_layer0_generator(x, nb_rows, nb_cols):
+
+    x = Dense((nb_rows + 2) * (nb_cols + 2) * 64)(x)
+    x = Reshape((nb_rows + 2, nb_cols + 2, 64))(x)
+
     x = Conv2D(128, (2, 2), padding='same')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
@@ -59,70 +81,49 @@ def build_generator(x, nb_rows, nb_cols):
     x = LeakyReLU()(x)
 
     x = Conv2D(1, (2, 2), use_bias=True)(x)
-    #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
-    return x
-
-
-def build_layer0_generator(x, nb_rows, nb_cols):
-
-    x = Dense((nb_rows) * (nb_cols // 4) * 256)(x)
-    x = Reshape((nb_rows, (nb_cols // 4), 256))(x)
-
-    x = Conv2D(512, (2, 8), padding='same')(x)
-    x = LeakyReLU()(x)
-    x = BatchNormalization()(x)
-
-    x = Lambda(lambda t: tf.depth_to_space(t, 2))(x)
-    x = Conv2D(128, (2, 6), padding='same')(x)
-    x = LeakyReLU()(x)
-
-    x = Lambda(lambda t: tf.depth_to_space(t, 2))(x)
-    # x = BatchNormalization()(x)
-
-    x = AveragePooling2D((4, 1))(x)
-
-    x = Conv2D(1, (2, 2), padding='same')(x)
     return x
 
 
 def build_layer1_generator(x, nb_rows, nb_cols):
 
-    x = Dense(((nb_rows // 2)) * ((nb_cols // 2)) * 512)(x)
-    x = Reshape(((nb_rows // 2), (nb_cols // 2), 512))(x)
+    x = Dense((nb_rows + 2) * (nb_cols + 2) * 64)(x)
+    x = Reshape((nb_rows + 2, nb_cols + 2, 64))(x)
 
-    x = Conv2D(256, (4, 4), padding='same')(x)
+    x = Conv2D(128, (2, 2), padding='same')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = Lambda(lambda t: tf.depth_to_space(t, 2))(x)
-
-    x = Conv2D(64, (4, 4), strides=(1, 1), padding='same')(x)
+    x = Conv2D(64, (2, 2), padding='same')(x)
     x = LeakyReLU()(x)
-    # x = BatchNormalization()(x)
+    x = BatchNormalization()(x)
 
-    x = Conv2D(1, (2, 2), padding='same')(x)
+    x = Conv2D(32, (2, 2))(x)
+    #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+    x = LeakyReLU()(x)
+
+    x = Conv2D(1, (2, 2), use_bias=True)(x)
 
     return x
 
 
 def build_layer2_generator(x, nb_rows, nb_cols):
 
-    x = Dense(((nb_rows // 2)) * ((nb_cols)) * 512)(x)
-    x = Reshape(((nb_rows // 2), (nb_cols), 512))(x)
+    x = Dense((nb_rows + 2) * (nb_cols + 2) * 64)(x)
+    x = Reshape((nb_rows + 2, nb_cols + 2, 64))(x)
 
-    x = Conv2D(256, (4, 2), strides=(1, 1), padding='same')(x)
+    x = Conv2D(128, (2, 2), padding='same')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = Lambda(lambda t: tf.depth_to_space(t, 2))(x)
-
-    x = Conv2D(64, (3, 3), strides=(1, 1), padding='same')(x)
+    x = Conv2D(64, (2, 2), padding='same')(x)
     x = LeakyReLU()(x)
-    # x = BatchNormalization()(x)
+    x = BatchNormalization()(x)
 
-    x = AveragePooling2D((1, 2))(x)
+    x = Conv2D(32, (2, 2))(x)
+    #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+    x = LeakyReLU()(x)
 
-    x = Conv2D(1, (2, 2), padding='same')(x)
+    x = Conv2D(1, (2, 2), use_bias=True)(x)
 
     return x
 
