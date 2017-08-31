@@ -264,10 +264,6 @@ if __name__ == '__main__':
             sparsity=False,
             sparsity_mbd=False,
             soft_sparsity=False
-            # mbd=True,
-            # sparsity=True,
-            # sparsity_mbd=True,
-            # soft_sparsity=True
         ))
 
         energies.append(calculate_energy(calorimeter[l]))
@@ -284,52 +280,54 @@ if __name__ == '__main__':
     )(energies)
 
     # construct MBD on the raw energies
-    # nb_features = 10
-    # vspace_dim = 10
-    # minibatch_featurizer = Lambda(minibatch_discriminator,
-    #                               output_shape=minibatch_output_shape)
-    # K_energy = Dense3D(nb_features, vspace_dim)(energies)
+    nb_features = 10
+    vspace_dim = 10
+    minibatch_featurizer = Lambda(minibatch_discriminator,
+                                  output_shape=minibatch_output_shape)
+    K_energy = Dense3D(nb_features, vspace_dim)(energies)
 
-    # # constrain w/ a tanh to dampen the unbounded nature of energy-space
-    # mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
+    # constrain w/ a tanh to dampen the unbounded nature of energy-space
+    mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
 
-    # # absolute deviation away from input energy. Technically we can learn
-    # # this, but since we want to get as close as possible to conservation of
-    # # energy, just coding it in is better
-    # energy_well = Lambda(
-    #     lambda x: K.abs(x[0] - x[1])
-    # )([total_energy, input_energy])
+    # absolute deviation away from input energy. Technically we can learn
+    # this, but since we want to get as close as possible to conservation of
+    # energy, just coding it in is better
+    energy_well = Lambda(
+        lambda x: K.abs(x[0] - x[1])
+    )([total_energy, input_energy])
 
     # binary y/n if it is over the input energy
-    # well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
+    well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
 
     p = concatenate([
         features,
         scale(energies, 10),
         scale(total_energy, 100),
-        # energy_well,
-        # well_too_big,
-        # mbd_energy
+        energy_well,
+        well_too_big,
+        mbd_energy
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
 
     if angle_pos:
-        raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
+        # raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
 
-        def regression_branch(raveled_images):
-            h = Dense(512)(raveled_images)
-            h = Dropout(0.2)(LeakyReLU()(h))
-            h = Dense(1024)(h)
-            h = Dropout(0.5)(LeakyReLU()(h))
-            h = Dense(1024)(h)
-            h = Dropout(0.5)(LeakyReLU()(h))
-            h = Dense(128)(h)
-            h = Dropout(0.5)(LeakyReLU()(h))
-            y = Dense(4, activation='linear', name='angpos_outputs')(h)
-            return y
+        # def regression_branch(raveled_images):
+        #     h = Dense(512)(raveled_images)
+        #     h = Dropout(0.2)(LeakyReLU()(h))
+        #     h = Dense(1024)(h)
+        #     h = Dropout(0.5)(LeakyReLU()(h))
+        #     h = Dense(1024)(h)
+        #     h = Dropout(0.5)(LeakyReLU()(h))
+        #     h = Dense(128)(h)
+        #     h = Dropout(0.5)(LeakyReLU()(h))
+        #     y = Dense(4, activation='linear', name='angpos_outputs')(h)
+        #     return y
 
-        estimated_dof = regression_branch(raveled_calo)
+        # estimated_dof = regression_branch(raveled_calo)
+        h = Dense(128, activation='relu')(p)
+        estimated_dof = Dense(4, activation='linear', name='angpos_outputs')(h)
         #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
         discriminator_outputs = [fake, total_energy, estimated_dof]
         discriminator_losses = ['binary_crossentropy', 'mae', 'mae']
@@ -517,13 +515,13 @@ if __name__ == '__main__':
         loss=discriminator_losses
     )
 
-    # logger.info('saving network structures')
+    logger.info('saving network structures')
 
-    # with open('{}_structure.json'.format(parse_args.g_pfx), 'w') as f:
-    #     f.write(generator.to_json())
+    with open('{}_structure.json'.format(parse_args.g_pfx), 'w') as f:
+        f.write(generator.to_json())
 
-    # with open('{}_structure.json'.format(parse_args.d_pfx), 'w') as f:
-    #     f.write(discriminator.to_json())
+    with open('{}_structure.json'.format(parse_args.d_pfx), 'w') as f:
+        f.write(discriminator.to_json())
 
     logger.info('commencing training')
 
