@@ -63,53 +63,53 @@ def build_generator(x, nb_rows, nb_cols):
 
 def build_layer0_generator(x, nb_rows, nb_cols):
 
-    x = Dense((nb_rows + 2) * (nb_cols // 4) * 256)(x)
-    x = Reshape((nb_rows + 2, (nb_cols // 4), 256))(x)
+    x = Dense((nb_rows) * (nb_cols // 4) * 256)(x)
+    x = Reshape((nb_rows, (nb_cols // 4), 256))(x)
 
-    x = Conv2DTranspose(128, (2, 5), strides=(1, 2), padding='same')(x)
+    x = Conv2DTranspose(512, (2, 4), strides=(1, 2), padding='same')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = Conv2DTranspose(64, (2, 4), strides=(1, 2))(x)
+    x = Conv2DTranspose(128, (2, 6), strides=(1, 2), padding='same')(x)
     x = LeakyReLU()(x)
     # x = BatchNormalization()(x)
 
-    x = Conv2D(1, (4, 3), padding='valid')(x)
+    x = Conv2DTranspose(1, (2, 2), padding='same')(x)
     return x
 
 
 def build_layer1_generator(x, nb_rows, nb_cols):
 
-    x = Dense(((nb_rows // 4) + 1) * ((nb_cols // 4) + 1) * 1024)(x)
-    x = Reshape(((nb_rows // 4) + 1, (nb_cols // 4) + 1, 1024))(x)
+    x = Dense(((nb_rows // 2)) * ((nb_cols // 2)) * 512)(x)
+    x = Reshape(((nb_rows // 2), (nb_cols // 2), 512))(x)
 
-    x = Conv2DTranspose(256, (4, 4), strides=(2, 2), padding='same')(x)
+    x = Conv2DTranspose(128, (4, 4), strides=(2, 2), padding='same')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same')(x)
+    x = Conv2DTranspose(64, (4, 4), strides=(1, 1), padding='same')(x)
     x = LeakyReLU()(x)
     # x = BatchNormalization()(x)
 
-    x = Conv2D(1, (5, 5), padding='valid')(x)
+    x = Conv2DTranspose(1, (2, 2), padding='same')(x)
 
     return x
 
 
 def build_layer2_generator(x, nb_rows, nb_cols):
 
-    x = Dense(((nb_rows // 4)) * ((nb_cols // 2)) * 1024)(x)
-    x = Reshape(((nb_rows // 4), (nb_cols // 2), 1024))(x)
+    x = Dense(((nb_rows // 2)) * ((nb_cols)) * 512)(x)
+    x = Reshape(((nb_rows // 2), (nb_cols), 512))(x)
 
-    x = Conv2DTranspose(256, (4, 4), strides=(2, 2), padding='same')(x)
+    x = Conv2DTranspose(256, (4, 2), strides=(2, 1), padding='same')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = Conv2DTranspose(64, (5, 5), strides=(2, 1), padding='same')(x)
+    x = Conv2DTranspose(64, (3, 3), strides=(1, 1), padding='same')(x)
     x = LeakyReLU()(x)
     # x = BatchNormalization()(x)
 
-    x = Conv2D(1, (2, 2), padding='same')(x)
+    x = Conv2DTranspose(1, (2, 2), padding='same')(x)
 
     return x
 

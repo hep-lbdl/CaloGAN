@@ -358,6 +358,7 @@ if __name__ == '__main__':
         optimizer=Adam(lr=disc_lr, beta_1=adam_beta_1),
         loss=discriminator_losses
     )
+    discriminator.summary(print_fn=logger.debug)
 
     logger.info('Building generator')
 
@@ -493,6 +494,8 @@ if __name__ == '__main__':
         optimizer=Adam(lr=gen_lr, beta_1=adam_beta_1),
         loss='binary_crossentropy'
     )
+
+    generator.summary(print_fn=logger.debug)
 
     discriminator.trainable = False
 
