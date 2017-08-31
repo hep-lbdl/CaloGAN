@@ -260,6 +260,7 @@ if __name__ == '__main__':
         # build features per layer of calorimeter
         features.append(build_discriminator(
             image=calorimeter[l],
+            layer=l,
             mbd=True,
             sparsity=False,
             sparsity_mbd=False,
