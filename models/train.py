@@ -284,24 +284,24 @@ if __name__ == '__main__':
     )(energies)
 
     # construct MBD on the raw energies
-    nb_features = 10
-    vspace_dim = 10
-    minibatch_featurizer = Lambda(minibatch_discriminator,
-                                  output_shape=minibatch_output_shape)
-    K_energy = Dense3D(nb_features, vspace_dim)(energies)
+    # nb_features = 10
+    # vspace_dim = 10
+    # minibatch_featurizer = Lambda(minibatch_discriminator,
+    #                               output_shape=minibatch_output_shape)
+    # K_energy = Dense3D(nb_features, vspace_dim)(energies)
 
-    # constrain w/ a tanh to dampen the unbounded nature of energy-space
-    mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
+    # # constrain w/ a tanh to dampen the unbounded nature of energy-space
+    # mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
 
-    # absolute deviation away from input energy. Technically we can learn
-    # this, but since we want to get as close as possible to conservation of
-    # energy, just coding it in is better
-    energy_well = Lambda(
-        lambda x: K.abs(x[0] - x[1])
-    )([total_energy, input_energy])
+    # # absolute deviation away from input energy. Technically we can learn
+    # # this, but since we want to get as close as possible to conservation of
+    # # energy, just coding it in is better
+    # energy_well = Lambda(
+    #     lambda x: K.abs(x[0] - x[1])
+    # )([total_energy, input_energy])
 
     # binary y/n if it is over the input energy
-    well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
+    # well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
 
     p = concatenate([
         features,
