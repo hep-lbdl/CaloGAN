@@ -261,9 +261,13 @@ if __name__ == '__main__':
         features.append(build_discriminator(
             image=calorimeter[l],
             mbd=True,
-            sparsity=True,
-            sparsity_mbd=True,
-            soft_sparsity=True
+            sparsity=False,
+            sparsity_mbd=False,
+            soft_sparsity=False
+            # mbd=True,
+            # sparsity=True,
+            # sparsity_mbd=True,
+            # soft_sparsity=True
         ))
 
         energies.append(calculate_energy(calorimeter[l]))
@@ -303,9 +307,9 @@ if __name__ == '__main__':
         features,
         scale(energies, 10),
         scale(total_energy, 100),
-        energy_well,
-        well_too_big,
-        mbd_energy
+        # energy_well,
+        # well_too_big,
+        # mbd_energy
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
