@@ -37,7 +37,7 @@ def inpainting_attention(primary, carryover, constant=-10):
     #     return _
 
     x = concatenate([primary, carryover], axis=-1)
-    h = ZeroPadding2D((1, 1))(x)
+    # h = ZeroPadding2D((1, 1))(x)
 
     # lcn = LocallyConnected2D(
     #     filters=2,
@@ -50,6 +50,7 @@ def inpainting_attention(primary, carryover, constant=-10):
     cnv = Conv2D(
         filters=10,
         kernel_size=(5, 5),
+        padding='same'
     )
 
     h = cnv(h)
