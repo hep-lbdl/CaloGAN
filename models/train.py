@@ -458,6 +458,7 @@ if __name__ == '__main__':
         1, (3, 3),
         kernel_constraint=non_neg(),
         padding='same',
+        activation='relu',
         bias_constraint=non_neg(),
         kernel_initializer=TruncatedNormal(1)
     )
