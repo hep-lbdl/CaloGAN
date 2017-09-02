@@ -453,7 +453,7 @@ if __name__ == '__main__':
 
     generator_outputs = [
         Activation('relu')(img_layer0),
-        Activation('relu')(img_layer1),
+        Activation('softplus')(img_layer1),
         Activation('relu')(img_layer2)
     ]
 
