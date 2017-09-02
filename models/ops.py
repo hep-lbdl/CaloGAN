@@ -53,7 +53,7 @@ def inpainting_attention(primary, carryover, constant=-10):
         padding='same'
     )
 
-    h = cnv(h)
+    h = cnv(x)
 
     h = LeakyReLU()(h)
     h = Conv2D(1, (3, 3), activation='relu')(h)
