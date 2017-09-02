@@ -428,7 +428,7 @@ if __name__ == '__main__':
 
     img_layer1 = Conv2D(32, (7, 7), padding='same')(img_layer1)
     img_layer1 = LeakyReLU()(img_layer1)
-    img_layer1 = Conv2D(1, (5, 5), padding='same',
+    img_layer1 = Conv2D(1, (5, 5), padding='same', activation='relu'
                         bias_initializer=RandomNormal(3, 0.2))(img_layer1)
     img_layer1 = blur(img_layer1)
 
@@ -446,7 +446,6 @@ if __name__ == '__main__':
         zero2one = AveragePooling2D(pool_size=(1, 8))(
             UpSampling2D(size=(4, 1))(img_layer0))
         img_layer1 = inpainting_attention(img_layer1, zero2one)
-        img_layer1 = blur(img_layer1)
 
         # resizes from (12, 12) => (12, 6)
         one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
