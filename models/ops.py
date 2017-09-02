@@ -56,7 +56,7 @@ def inpainting_attention(primary, carryover, constant=-10):
     h = cnv(x)
 
     h = LeakyReLU()(h)
-    h = Conv2D(1, (3, 3), activation='relu')(h)
+    h = Conv2D(1, (3, 3), activation='relu', padding='same')(h)
     return h
 
     # weights = Lambda(channel_softmax)(h)
