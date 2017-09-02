@@ -44,7 +44,7 @@ def build_generator(x, nb_rows, nb_cols):
     x = Dense((nb_rows + 2) * (nb_cols + 2) * 36)(x)
     x = Reshape((nb_rows + 2, nb_cols + 2, 36))(x)
 
-    x = Conv2D(64, (5, 5), padding='same', kernel_initializer='he_uniform')(x)
+    x = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
@@ -76,7 +76,7 @@ def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False,
 
     """
 
-    x = Conv2D(16, (5, 5), padding='same')(image)
+    x = Conv2D(16, (3, 3), padding='same')(image)
     x = LeakyReLU()(x)
 
     x = ZeroPadding2D((1, 1))(x)
