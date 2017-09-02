@@ -428,7 +428,7 @@ if __name__ == '__main__':
 
     img_layer1 = Conv2D(32, (7, 7), padding='same')(img_layer1)
     img_layer1 = LeakyReLU()(img_layer1)
-    img_layer1 = Conv2D(1, (5, 5), padding='same', activation='relu'
+    img_layer1 = Conv2D(1, (5, 5), padding='same', activation='relu',
                         bias_initializer=RandomNormal(3, 0.2))(img_layer1)
     img_layer1 = blur(img_layer1)
 
