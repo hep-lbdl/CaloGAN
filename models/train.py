@@ -430,7 +430,7 @@ if __name__ == '__main__':
     img_layer1 = LeakyReLU()(img_layer1)
     img_layer1 = Conv2D(1, (5, 5), padding='same',
                         bias_initializer=RandomNormal(3, 0.2))(img_layer1)
-    # img_layer1 = blur(img_layer1)
+    img_layer1 = blur(img_layer1)
 
     img_layer2 = build_generator(h, 12, 6)
 
@@ -451,9 +451,13 @@ if __name__ == '__main__':
         one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
         img_layer2 = inpainting_attention(img_layer2, one2two)
 
+    from keras.constraints import non_neg
+    smear = Conv2D(1, (3, 3), kernel_constraint=non_neg(),
+                   bias_constraint=non_neg())
+
     generator_outputs = [
         Activation('relu')(img_layer0),
-        blur(Activation('relu')(img_layer1)),
+        smear(Activation('relu')(img_layer1)),
         Activation('relu')(img_layer2)
     ]
 
