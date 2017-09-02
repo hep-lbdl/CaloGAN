@@ -452,7 +452,7 @@ if __name__ == '__main__':
         img_layer2 = inpainting_attention(img_layer2, one2two)
 
     from keras.constraints import non_neg
-    smear = Conv2D(1, (3, 3), kernel_constraint=non_neg(),
+    smear = Conv2D(1, (3, 3), kernel_constraint=non_neg(), padding='same',
                    bias_constraint=non_neg())
 
     generator_outputs = [
