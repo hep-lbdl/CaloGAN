@@ -419,9 +419,9 @@ if __name__ == '__main__':
 
     img_layer0 = build_generator(h, 3, 96)
 
-    img_layer0 = Conv2D(32, (2, 11), padding='same')(img_layer0)
+    img_layer0 = Conv2D(32, (3, 11), padding='same')(img_layer0)
     img_layer0 = LeakyReLU()(img_layer0)
-    img_layer0 = Conv2D(1, (2, 5), padding='same')(img_layer0)
+    img_layer0 = Conv2D(1, (3, 5), padding='same')(img_layer0)
     # img_layer0 = blur(img_layer0)
 
     img_layer1 = build_generator(h, 12, 12)
@@ -434,7 +434,7 @@ if __name__ == '__main__':
 
     img_layer2 = build_generator(h, 12, 6)
 
-    img_layer2 = Conv2D(32, (7, 4), padding='same')(img_layer2)
+    img_layer2 = Conv2D(32, (7, 3), padding='same')(img_layer2)
     img_layer2 = LeakyReLU()(img_layer2)
     img_layer2 = Conv2D(1, (5, 3), padding='same')(img_layer2)
 
