@@ -413,8 +413,8 @@ if __name__ == '__main__':
     # linear last layer
 
     from keras.initializers import RandomNormal, Constant
-    blur = Conv2D(1, (3, 3), padding='same', use_bias=False,
-                  kernel_initializer=Constant(1 / 9.))
+    blur = Conv2D(1, (5, 5), padding='same', use_bias=False,
+                  kernel_initializer=Constant(1 / 25.))
     blur.trainable = False
 
     img_layer0 = build_generator(h, 3, 96)
@@ -451,21 +451,9 @@ if __name__ == '__main__':
         one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
         img_layer2 = inpainting_attention(img_layer2, one2two)
 
-    from keras.constraints import non_neg
-    from keras.initializers import TruncatedNormal
-
-    smear = Conv2D(
-        1, (3, 3),
-        kernel_constraint=non_neg(),
-        padding='same',
-        activation='relu',
-        bias_constraint=non_neg(),
-        kernel_initializer=TruncatedNormal(1)
-    )
-
     generator_outputs = [
         Activation('relu')(img_layer0),
-        smear(Activation('relu')(img_layer1)),
+        Activation('relu')(img_layer1),
         Activation('relu')(img_layer2)
     ]
 
