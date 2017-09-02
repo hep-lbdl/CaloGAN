@@ -413,8 +413,8 @@ if __name__ == '__main__':
     # linear last layer
 
     from keras.initializers import RandomNormal, Constant
-    blur = Conv2D(1, (5, 5), padding='same', use_bias=False,
-                  kernel_initializer=Constant(1 / 25.))
+    blur = Conv2D(1, (3, 3), padding='same', use_bias=False,
+                  kernel_initializer=Constant(1 / 9.))
     blur.trainable = False
 
     img_layer0 = build_generator(h, 3, 96)
