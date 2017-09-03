@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 file: ops.py
-description: ancillary ops for [arXiv/1705.02355] 
+description: ancillary ops for [arXiv/1705.02355]
     (borrowing from [arXiv/1701.05927])
 author: Luke de Oliveira (lukedeo@manifold.ai)
 """
@@ -14,6 +14,15 @@ from keras.layers import Lambda, ZeroPadding2D, LocallyConnected2D, Conv2D
 from keras.layers.merge import concatenate, multiply
 
 import numpy as np
+
+
+def hparams():
+    from keras.initializers import TruncatedNormal
+    from keras.regularizers import l2
+    return {
+        'kernel_initializer': TruncatedNormal(mean=0.0, stddev=0.02),
+        'kernel_regularizer': l2(2.5e-5)
+    }
 
 
 def channel_softmax(x):

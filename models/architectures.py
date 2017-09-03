@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
+""" 
 file: architectures.py
 description: sub-architectures for [arXiv/1705.02355]
 author: Luke de Oliveira (lukedeo@manifold.ai)
@@ -17,7 +17,7 @@ import numpy as np
 
 from ops import (minibatch_discriminator, minibatch_output_shape,
                  Dense3D, sparsity_level, soft_sparsity_level,
-                 sparsity_output_shape)
+                 sparsity_output_shape, hparams)
 
 
 def sparse_softmax(x):
@@ -40,25 +40,21 @@ def build_generator(x, nb_rows, nb_cols):
     --------
         a keras tensor with the transformation applied
     """
-    x = Dense((nb_rows // 2 + 2) * (nb_cols // 2 + 2) * 36)(x)
-    x = LeakyReLU()(x)
 
-    x = Dense((nb_rows + 2) * (nb_cols + 2) * 36)(x)
-    x = LeakyReLU()(x)
-
+    x = Dense((nb_rows + 2) * (nb_cols + 2) * 36, **hparams())(x)
     x = Reshape((nb_rows + 2, nb_cols + 2, 36))(x)
 
-    x = Conv2D(64, (3, 3), padding='same')(x)
+    x = Conv2D(64, (3, 3), padding='same', **hparams())(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    # x = LocallyConnected2D(16, (2, 2), kernel_initializer='he_uniform')(x)
-    x = Conv2D(6, (3, 3), padding='same')(x)
+    x = Conv2D(16, (2, 2), **hparams())(x)
+    #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
     x = LeakyReLU()(x)
-    x = BatchNormalization()(x)
 
-    x = Conv2D(1, (3, 3), use_bias=True)(x)
-    # x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
+    x = Conv2D(1, (2, 2), use_bias=True,
+               **hparams())(x)
+    #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
     return x
 
 
@@ -80,21 +76,18 @@ def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False,
 
     """
 
-    x = Conv2D(16, (3, 3), padding='same')(image)
+    x = Conv2D(16, (5, 5), padding='same', **hparams())(image)
     x = LeakyReLU()(x)
 
-    x = Conv2D(32, (3, 3), padding='same', strides=(1, 2))(x)
-    # x = Conv2D(16, (3, 3), padding='valid', strides=(1, 2))(x)
-    x = LeakyReLU()(x)
-    x = BatchNormalization()(x)
-
-    x = Conv2D(64, (2, 2), padding='valid')(x)
-    # x = Conv2D(8, (2, 2), padding='valid')(x)
+    x = ZeroPadding2D((1, 1))(x)
+    x = Conv2D(32, (3, 3), padding='valid', strides=(1, 2), **hparams())(x)
+    #x = Conv2D(16, (3, 3), padding='valid', strides=(1, 2))(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = Conv2D(128, (2, 2), padding='valid')(x)
-    # x = Conv2D(8, (2, 2), padding='valid')(x)
+    x = ZeroPadding2D((1, 1))(x)
+    x = Conv2D(64, (2, 2), padding='valid', **hparams())(x)
+    #x = Conv2D(8, (2, 2), padding='valid')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 

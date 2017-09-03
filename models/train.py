@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-""" 
+"""
 file: train.py
-author: Luke de Oliveira (lukedeo@vaitech.io), 
+author: Luke de Oliveira (lukedeo@vaitech.io),
         Michela Paganini (michela.paganini@yale.edu)
 """
 
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     K.set_image_dim_ordering('tf')
 
     from ops import (minibatch_discriminator, minibatch_output_shape, Dense3D,
-                     calculate_energy, scale, inpainting_attention)
+                     calculate_energy, scale, inpainting_attention, hparams)
 
     from architectures import build_generator, build_discriminator
 
@@ -326,7 +326,7 @@ if __name__ == '__main__':
             return y
 
         estimated_dof = regression_branch(raveled_calo)
-        #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
+        # angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
         discriminator_outputs = [fake, total_energy, estimated_dof]
         discriminator_losses = ['binary_crossentropy', 'mae', 'mae']
 
@@ -388,7 +388,7 @@ if __name__ == '__main__':
         he = Lambda(lambda x: x[0] * x[1])([hc, scale(input_energy, 100)])
         h = Concatenate()([
             he,
-            #scale(input_energy, 100),
+            # scale(input_energy, 100),
             input_properties_g[0],
             input_properties_g[1],
             scale(input_properties_g[2], 50),
@@ -419,24 +419,24 @@ if __name__ == '__main__':
 
     img_layer0 = build_generator(h, 3, 96)
 
-    img_layer0 = Conv2D(32, (3, 7), padding='same')(img_layer0)
+    img_layer0 = Conv2D(32, (3, 7), padding='same', **hparams())(img_layer0)
     img_layer0 = LeakyReLU()(img_layer0)
-    img_layer0 = Conv2D(1, (3, 5), padding='same')(img_layer0)
+    img_layer0 = Conv2D(1, (3, 5), padding='same', **hparams())(img_layer0)
     # img_layer0 = blur(img_layer0)
 
     img_layer1 = build_generator(h, 12, 12)
 
-    img_layer1 = Conv2D(32, (5, 5), padding='same')(img_layer1)
+    img_layer1 = Conv2D(32, (5, 5), padding='same', **hparams())(img_layer1)
     img_layer1 = LeakyReLU()(img_layer1)
-    img_layer1 = Conv2D(1, (3, 3), padding='same', activation='relu',
+    img_layer1 = Conv2D(1, (3, 3), padding='same', **hparams(), activation='relu',
                         bias_initializer=RandomNormal(3, 0.2))(img_layer1)
     # img_layer1 = blur(img_layer1)
 
     img_layer2 = build_generator(h, 12, 6)
 
-    img_layer2 = Conv2D(32, (5, 3), padding='same')(img_layer2)
+    img_layer2 = Conv2D(32, (5, 3), padding='same', **hparams())(img_layer2)
     img_layer2 = LeakyReLU()(img_layer2)
-    img_layer2 = Conv2D(1, (5, 3), padding='same')(img_layer2)
+    img_layer2 = Conv2D(1, (5, 3), padding='same', **hparams())(img_layer2)
 
     if not no_attn:
 
@@ -621,7 +621,8 @@ if __name__ == '__main__':
                 sampled_x0 = sample_empirical_x0(batch_size)
                 sampled_y0 = sample_empirical_y0(batch_size)
 
-                #combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi, sampled_x0, sampled_y0, sampled_energies]
+                # combined_inputs = [noise, sampled_energies, sampled_theta, sampled_phi,
+                # sampled_x0, sampled_y0, sampled_energies]
                 combined_inputs = [noise, sampled_energies, sampled_theta,
                                    sampled_phi, sampled_x0, sampled_y0]
                 if angle_pos:
