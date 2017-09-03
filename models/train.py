@@ -311,21 +311,23 @@ if __name__ == '__main__':
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
 
     if angle_pos:
-        raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
+        # raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
 
-        def regression_branch(raveled_images):
-            h = Dense(512)(raveled_images)
-            h = Dropout(0.2)(LeakyReLU()(h))
-            h = Dense(1024)(h)
-            h = Dropout(0.5)(LeakyReLU()(h))
-            h = Dense(1024)(h)
-            h = Dropout(0.5)(LeakyReLU()(h))
-            h = Dense(128)(h)
-            h = Dropout(0.5)(LeakyReLU()(h))
-            y = Dense(4, activation='linear', name='angpos_outputs')(h)
-            return y
+        # def regression_branch(raveled_images):
+        #     h = Dense(512)(raveled_images)
+        #     h = Dropout(0.2)(LeakyReLU()(h))
+        #     h = Dense(1024)(h)
+        #     h = Dropout(0.5)(LeakyReLU()(h))
+        #     h = Dense(1024)(h)
+        #     h = Dropout(0.5)(LeakyReLU()(h))
+        #     h = Dense(128)(h)
+        #     h = Dropout(0.5)(LeakyReLU()(h))
+        #     y = Dense(4, activation='linear', name='angpos_outputs')(h)
+        #     return y
 
-        estimated_dof = regression_branch(raveled_calo)
+        # estimated_dof = regression_branch(raveled_calo)
+
+        estimated_dof = Dense(4, activation='linear', name='angpos_outputs')(p)
         #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
         discriminator_outputs = [fake, total_energy, estimated_dof]
         discriminator_losses = ['binary_crossentropy', 'mae', 'mae']
