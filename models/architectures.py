@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-""" 
+"""
 file: architectures.py
 description: sub-architectures for [arXiv/1705.02355]
 author: Luke de Oliveira (lukedeo@manifold.ai)
@@ -44,17 +44,16 @@ def build_generator(x, nb_rows, nb_cols):
     x = Dense((nb_rows + 2) * (nb_cols + 2) * 36)(x)
     x = Reshape((nb_rows + 2, nb_cols + 2, 36))(x)
 
-    x = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(x)
+    x = Conv2D(64, (3, 3), padding='same')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = LocallyConnected2D(16, (2, 2), kernel_initializer='he_uniform')(x)
-    #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
+    # x = LocallyConnected2D(16, (2, 2), kernel_initializer='he_uniform')(x)
+    x = Conv2D(6, (3, 3), padding='same')(x)
     x = LeakyReLU()(x)
 
-    x = LocallyConnected2D(1, (2, 2), use_bias=True,
-                           kernel_initializer='glorot_normal')(x)
-    #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
+    x = Conv2D(1, (3, 3), use_bias=True)(x)
+    # x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
     return x
 
 
@@ -79,15 +78,18 @@ def build_discriminator(image, mbd=False, sparsity=False, sparsity_mbd=False,
     x = Conv2D(16, (3, 3), padding='same')(image)
     x = LeakyReLU()(x)
 
-    x = ZeroPadding2D((1, 1))(x)
-    x = Conv2D(32, (3, 3), padding='valid', strides=(1, 2))(x)
-    #x = Conv2D(16, (3, 3), padding='valid', strides=(1, 2))(x)
+    x = Conv2D(32, (3, 3), padding='same', strides=(1, 2))(x)
+    # x = Conv2D(16, (3, 3), padding='valid', strides=(1, 2))(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = ZeroPadding2D((1, 1))(x)
     x = Conv2D(64, (2, 2), padding='valid')(x)
-    #x = Conv2D(8, (2, 2), padding='valid')(x)
+    # x = Conv2D(8, (2, 2), padding='valid')(x)
+    x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
+
+    x = Conv2D(128, (2, 2), padding='valid')(x)
+    # x = Conv2D(8, (2, 2), padding='valid')(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
