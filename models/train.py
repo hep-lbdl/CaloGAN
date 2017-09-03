@@ -419,9 +419,9 @@ if __name__ == '__main__':
 
     img_layer0 = build_generator(h, 3, 96)
 
-    img_layer0 = Conv2D(32, (3, 3), padding='same')(img_layer0)
+    img_layer0 = Conv2D(32, (3, 7), padding='same')(img_layer0)
     img_layer0 = LeakyReLU()(img_layer0)
-    img_layer0 = Conv2D(1, (3, 3), padding='same')(img_layer0)
+    img_layer0 = Conv2D(1, (3, 5), padding='same')(img_layer0)
     # img_layer0 = blur(img_layer0)
 
     img_layer1 = build_generator(h, 12, 12)
@@ -430,13 +430,13 @@ if __name__ == '__main__':
     img_layer1 = LeakyReLU()(img_layer1)
     img_layer1 = Conv2D(1, (3, 3), padding='same', activation='relu',
                         bias_initializer=RandomNormal(3, 0.2))(img_layer1)
-    img_layer1 = blur(img_layer1)
+    # img_layer1 = blur(img_layer1)
 
     img_layer2 = build_generator(h, 12, 6)
 
-    img_layer2 = Conv2D(32, (3, 3), padding='same')(img_layer2)
+    img_layer2 = Conv2D(32, (5, 3), padding='same')(img_layer2)
     img_layer2 = LeakyReLU()(img_layer2)
-    img_layer2 = Conv2D(1, (3, 3), padding='same')(img_layer2)
+    img_layer2 = Conv2D(1, (5, 3), padding='same')(img_layer2)
 
     if not no_attn:
 

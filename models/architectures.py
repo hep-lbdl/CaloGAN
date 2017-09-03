@@ -40,8 +40,12 @@ def build_generator(x, nb_rows, nb_cols):
     --------
         a keras tensor with the transformation applied
     """
+    x = Dense((nb_rows // 2 + 2) * (nb_cols // 2 + 2) * 36)(x)
+    x = LeakyReLU()(x)
 
     x = Dense((nb_rows + 2) * (nb_cols + 2) * 36)(x)
+    x = LeakyReLU()(x)
+
     x = Reshape((nb_rows + 2, nb_cols + 2, 36))(x)
 
     x = Conv2D(64, (3, 3), padding='same')(x)
@@ -51,6 +55,7 @@ def build_generator(x, nb_rows, nb_cols):
     # x = LocallyConnected2D(16, (2, 2), kernel_initializer='he_uniform')(x)
     x = Conv2D(6, (3, 3), padding='same')(x)
     x = LeakyReLU()(x)
+    x = BatchNormalization()(x)
 
     x = Conv2D(1, (3, 3), use_bias=True)(x)
     # x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
