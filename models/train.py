@@ -428,8 +428,8 @@ if __name__ == '__main__':
 
     img_layer1 = Conv2D(32, (5, 5), padding='same', **hparams())(img_layer1)
     img_layer1 = LeakyReLU()(img_layer1)
-    img_layer1 = Conv2D(1, (3, 3), padding='same', **hparams(), activation='relu',
-                        bias_initializer=RandomNormal(3, 0.2))(img_layer1)
+    img_layer1 = Conv2D(1, (3, 3), padding='same', activation='relu',
+                        bias_initializer=RandomNormal(3, 0.2), **hparams())(img_layer1)
     # img_layer1 = blur(img_layer1)
 
     img_layer2 = build_generator(h, 12, 6)
