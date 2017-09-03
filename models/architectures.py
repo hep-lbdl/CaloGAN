@@ -48,12 +48,12 @@ def build_generator(x, nb_rows, nb_cols):
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
 
-    x = Conv2D(16, (2, 2), kernel_initializer='he_uniform')(x)
+    x = LocallyConnected2D(16, (2, 2), kernel_initializer='he_uniform')(x)
     #    x = Conv2D(6, (2, 2), kernel_initializer='he_uniform')(x)
     x = LeakyReLU()(x)
 
-    x = Conv2D(1, (2, 2), use_bias=True,
-               kernel_initializer='glorot_normal')(x)
+    x = LocallyConnected2D(1, (2, 2), use_bias=True,
+                           kernel_initializer='glorot_normal')(x)
     #x = Conv2D(1, (2, 2), use_bias=False, kernel_initializer='glorot_uniform')(x)
     return x
 

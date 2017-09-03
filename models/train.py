@@ -311,23 +311,21 @@ if __name__ == '__main__':
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
 
     if angle_pos:
-        # raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
+        raveled_calo = concatenate([Flatten()(calorimeter[i]) for i in range(3)], axis=-1)
 
-        # def regression_branch(raveled_images):
-        #     h = Dense(512)(raveled_images)
-        #     h = Dropout(0.2)(LeakyReLU()(h))
-        #     h = Dense(1024)(h)
-        #     h = Dropout(0.5)(LeakyReLU()(h))
-        #     h = Dense(1024)(h)
-        #     h = Dropout(0.5)(LeakyReLU()(h))
-        #     h = Dense(128)(h)
-        #     h = Dropout(0.5)(LeakyReLU()(h))
-        #     y = Dense(4, activation='linear', name='angpos_outputs')(h)
-        #     return y
+        def regression_branch(raveled_images):
+            h = Dense(512)(raveled_images)
+            h = Dropout(0.2)(LeakyReLU()(h))
+            h = Dense(1024)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            h = Dense(1024)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            h = Dense(128)(h)
+            h = Dropout(0.5)(LeakyReLU()(h))
+            y = Dense(4, activation='linear', name='angpos_outputs')(h)
+            return y
 
-        # estimated_dof = regression_branch(raveled_calo)
-
-        estimated_dof = Dense(4, activation='linear', name='angpos_outputs')(p)
+        estimated_dof = regression_branch(raveled_calo)
         #angle_pos = Dense(4, activation='linear', name='angpos_outputs')(raveled_calo)
         discriminator_outputs = [fake, total_energy, estimated_dof]
         discriminator_losses = ['binary_crossentropy', 'mae', 'mae']
@@ -421,24 +419,24 @@ if __name__ == '__main__':
 
     img_layer0 = build_generator(h, 3, 96)
 
-    img_layer0 = Conv2D(32, (3, 11), padding='same')(img_layer0)
+    img_layer0 = Conv2D(32, (3, 3), padding='same')(img_layer0)
     img_layer0 = LeakyReLU()(img_layer0)
-    img_layer0 = Conv2D(1, (3, 5), padding='same')(img_layer0)
+    img_layer0 = Conv2D(1, (3, 3), padding='same')(img_layer0)
     # img_layer0 = blur(img_layer0)
 
     img_layer1 = build_generator(h, 12, 12)
 
-    img_layer1 = Conv2D(32, (7, 7), padding='same')(img_layer1)
+    img_layer1 = Conv2D(32, (5, 5), padding='same')(img_layer1)
     img_layer1 = LeakyReLU()(img_layer1)
-    img_layer1 = Conv2D(1, (5, 5), padding='same', activation='relu',
+    img_layer1 = Conv2D(1, (3, 3), padding='same', activation='relu',
                         bias_initializer=RandomNormal(3, 0.2))(img_layer1)
     img_layer1 = blur(img_layer1)
 
     img_layer2 = build_generator(h, 12, 6)
 
-    img_layer2 = Conv2D(32, (7, 3), padding='same')(img_layer2)
+    img_layer2 = Conv2D(32, (3, 3), padding='same')(img_layer2)
     img_layer2 = LeakyReLU()(img_layer2)
-    img_layer2 = Conv2D(1, (5, 3), padding='same')(img_layer2)
+    img_layer2 = Conv2D(1, (3, 3), padding='same')(img_layer2)
 
     if not no_attn:
 
