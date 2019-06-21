@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-""" 
+"""
 file: train.py
 description: main training script for [arXiv/1705.02355]
-author: Luke de Oliveira (lukedeo@manifold.ai), 
+author: Luke de Oliveira (lukedeo@manifold.ai),
         Michela Paganini (michela.paganini@yale.edu)
 """
 
@@ -477,8 +477,8 @@ if __name__ == '__main__':
             epoch + 1, np.mean(epoch_disc_loss, axis=0)))
 
         # save weights every epoch
-        generator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
+        generator.save_weights('/home/CaloGAN/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
                                overwrite=True)
 
-        discriminator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
+        discriminator.save_weights('/home/CaloGAN/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
                                    overwrite=True)
