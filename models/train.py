@@ -477,8 +477,8 @@ if __name__ == '__main__':
             epoch + 1, np.mean(epoch_disc_loss, axis=0)))
 
         # save weights every epoch
-        generator.save_weights('/home/CaloGAN/data/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
+        generator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
                                overwrite=True)
 
-        discriminator.save_weights('/home/CaloGAN/data/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
+        discriminator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
                                    overwrite=True)
