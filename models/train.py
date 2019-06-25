@@ -170,68 +170,61 @@ if __name__ == '__main__':
         d = h5py.File(datafile, 'r')
 
         # make our calo images channels-last
-        first = np.expand_dims(d['layer_0'][:], -1)
-        second = np.expand_dims(d['layer_1'][:], -1)
-        third = np.expand_dims(d['layer_2'][:], -1)
+        first = np.expand_dims(d['ECAL'][:], -1)
         # convert to MeV
         energy = d['energy'][:].reshape(-1, 1) * 1000
 
         sizes = [
-            first.shape[1], first.shape[2],
-            second.shape[1], second.shape[2],
-            third.shape[1], third.shape[2]
+            first.shape[1], first.shape[2]
         ]
 
         y = [particle] * first.shape[0]
 
         d.close()
 
-        return first, second, third, y, energy, sizes
+        return first, y, energy, sizes
 
     logger.debug('loading data from {} files'.format(nb_classes))
 
-    first, second, third, y, energy, sizes = [
+    first, y, energy, sizes = [
         np.concatenate(t) for t in [
             a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
         ]
     ]
 
     # TO-DO: check that all sizes match, so I could be taking any of them
-    sizes = sizes[:6].tolist()
+    sizes = sizes[:2].tolist()
 
     # scale the energy depositions by 1000 to convert MeV => GeV
-    first, second, third, energy = [
+    first, energy = [
         (X.astype(np.float32) / 1000)
-        for X in [first, second, third, energy]
+        for X in [first, energy]
     ]
 
     le = LabelEncoder()
     y = le.fit_transform(y)
 
-    first, second, third, y, energy = shuffle(first, second, third, y, energy,
-                                              random_state=0)
+    first, y, energy = shuffle(first, y, energy, random_state=0)
 
     logger.info('Building discriminator')
 
-    calorimeter = [Input(shape=sizes[:2] + [1]),
-                   Input(shape=sizes[2:4] + [1]),
-                   Input(shape=sizes[4:] + [1])]
+    calorimeter = [Input(shape=sizes[:2] + [1])]
 
     input_energy = Input(shape=(1, ))
 
     features = []
     energies = []
 
-    for l in range(3):
-        # build features per layer of calorimeter
-        features.append(build_discriminator(
-            image=calorimeter[l],
-            mbd=True,
-            sparsity=True,
-            sparsity_mbd=True
-        ))
+   
+     # build features layer of calorimeter
+    features.append(build_discriminator(
+          image=calorimeter[0],
+          mbd=True,
+          sparsity=True,
+          sparsity_mbd=True
+     ))
 
-        energies.append(calculate_energy(calorimeter[l]))
+    energies.append(calculate_energy(calorimeter[0]))
 
     features = concatenate(features)
 
@@ -326,27 +319,25 @@ if __name__ == '__main__':
 
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
     # linear last layer
-    img_layer0 = build_generator(h, 3, 96)
-    img_layer1 = build_generator(h, 12, 12)
-    img_layer2 = build_generator(h, 12, 6)
+    img_layer0 = build_generator(h, 100, 60)
 
     if not no_attn:
 
-        logger.info('using attentional mechanism')
+        logger.info('using attentional mechanism (deactiveted by Engin Eren)')
 
         # resizes from (3, 96) => (12, 12)
-        zero2one = AveragePooling2D(pool_size=(1, 8))(
-            UpSampling2D(size=(4, 1))(img_layer0))
-        img_layer1 = inpainting_attention(img_layer1, zero2one)
+        #zero2one = AveragePooling2D(pool_size=(1, 8))(
+         #   UpSampling2D(size=(4, 1))(img_layer0))
+        #img_layer1 = inpainting_attention(img_layer1, zero2one)
 
         # resizes from (12, 12) => (12, 6)
-        one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
-        img_layer2 = inpainting_attention(img_layer2, one2two)
+        #one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
+        #img_layer2 = inpainting_attention(img_layer2, one2two)
 
     generator_outputs = [
         Activation('relu')(img_layer0),
-        Activation('relu')(img_layer1),
-        Activation('relu')(img_layer2)
+      #  Activation('relu')(img_layer1),
+       # Activation('relu')(img_layer2)
     ]
 
     generator = Model(generator_inputs, generator_outputs)
@@ -394,8 +385,8 @@ if __name__ == '__main__':
 
             # get a batch of real images
             image_batch_1 = first[index * batch_size:(index + 1) * batch_size]
-            image_batch_2 = second[index * batch_size:(index + 1) * batch_size]
-            image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
+            #image_batch_2 = second[index * batch_size:(index + 1) * batch_size]
+            #image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
             label_batch = y[index * batch_size:(index + 1) * batch_size]
             energy_batch = energy[index * batch_size:(index + 1) * batch_size]
 
@@ -425,7 +416,7 @@ if __name__ == '__main__':
                 loss_weights.append(0.2 * np.ones(batch_size))
 
             real_batch_loss = discriminator.train_on_batch(
-                [image_batch_1, image_batch_2, image_batch_3, energy_batch],
+                [image_batch_1, energy_batch],
                 disc_outputs_real,
                 loss_weights
             )
