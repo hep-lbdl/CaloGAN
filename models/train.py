@@ -169,60 +169,59 @@ if __name__ == '__main__':
 
         d = h5py.File(datafile, 'r')
 
-        # make our calo images channels-last
-        first = np.expand_dims(d['layer_1'][:], -1)
-        second = np.expand_dims(d['layer_2'][:], -1)
-        third = np.expand_dims(d['layer_3'][:], -1)
+        # make our calo images channels for each layer
+        layers = []
+        for l in range(0,15):
+            layers.append(np.expand_dims(d['layer_{}'.format(l)][:], -1))
+        
         # convert to MeV
         energy = d['energy'][:].reshape(-1, 1) * 1000
 
+        ### I would like to consider 15 layers ILC calorimeter 
         sizes = [
-            first.shape[1], first.shape[2],
-            second.shape[1], second.shape[2],
-            third.shape[1], third.shape[2]
-        ]
+            layers[0].shape[1], layers[0].shape[2] 
+        ] * 15
 
-        y = [particle] * first.shape[0]
+        y = [particle] * layers[0].shape[0]
 
         d.close()
 
-        return first, second, third, y, energy, sizes
+        return layers, y, energy, sizes
 
     logger.debug('loading data from {} files'.format(nb_classes))
 
-    first, second, third, y, energy, sizes = [
+    layers, y, energy, sizes = [
         np.concatenate(t) for t in [
             a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
         ]
     ]
 
     # TO-DO: check that all sizes match, so I could be taking any of them
-    sizes = sizes[:6].tolist()
+    #sizes = sizes[:6].tolist()
 
     # scale the energy depositions by 1000 to convert MeV => GeV
-    first, second, third, energy = [
+    layers, energy = [
         (X.astype(np.float32) / 1000)
-        for X in [first, second, third, energy]
+        for X in [layers, energy]
     ]
 
     le = LabelEncoder()
     y = le.fit_transform(y)
 
-    first, second, third, y, energy = shuffle(first, second, third, y, energy,
+    layers, y, energy = shuffle(layers, y, energy,
                                               random_state=0)
 
     logger.info('Building discriminator')
 
-    calorimeter = [Input(shape=sizes[:2] + [1]),
-                   Input(shape=sizes[2:4] + [1]),
-                   Input(shape=sizes[4:] + [1])]
+    calorimeter = [Input(shape=sizes[:2] + [1])
+               ] * 15
 
     input_energy = Input(shape=(1, ))
 
     features = []
     energies = []
 
-    for l in range(3):
+    for l in range(15):
         # build features per layer of calorimeter
         features.append(build_discriminator(
             image=calorimeter[l],
@@ -235,7 +234,7 @@ if __name__ == '__main__':
 
     features = concatenate(features)
 
-    # This is a (None, 3) tensor with the individual energy per layer
+    # This is a (None, 15) tensor with the individual energy per layer
     energies = concatenate(energies)
 
     # calculate the total energy across all rows
