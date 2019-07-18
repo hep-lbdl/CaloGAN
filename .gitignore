@@ -100,3 +100,5 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# singularity image file
+calogan-docker_latest.sif
