@@ -171,7 +171,7 @@ if __name__ == '__main__':
 
         # make our calo images channels for each layer
         layers = []
-        for l in range(0,15):
+        for l in range(15):
             layers.append(np.expand_dims(d['layer_{}'.format(l)][:], -1))
 
         # convert to MeV
@@ -236,6 +236,9 @@ if __name__ == '__main__':
         ))
 
         energies.append(calculate_energy(calorimeter[l]))
+
+  
+
 
     features = concatenate(features)
 
@@ -333,7 +336,7 @@ if __name__ == '__main__':
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component
     img_layer = []
     for i in range(15):
-        img_layer.append(build_generator(h, 32, 32))
+        img_layer.append(build_generator(h, 10, 10))
 
 
     if not no_attn:
@@ -398,7 +401,7 @@ if __name__ == '__main__':
             image_batch = []
             for l in range(15):
                 image_batch.append(layers[l][index * batch_size:(index + 1) * batch_size])
-            logger.info('after getting batch of real images')
+            #logger.info('after getting batch of real images')
 
             label_batch = y[index * batch_size:(index + 1) * batch_size]
             energy_batch = energy[index * batch_size:(index + 1) * batch_size]
@@ -448,7 +451,7 @@ if __name__ == '__main__':
                 disc_outputs_real,
                 loss_weights
             )
-            logger.info('after discriminator.train_on_batch function')
+            #logger.info('after discriminator.train_on_batch function')
             # note that a given batch should have either *only* real or *only* fake,
             # as we have both minibatch discrimination and batch normalization, both
             # of which rely on batch level stats
@@ -461,6 +464,8 @@ if __name__ == '__main__':
             epoch_disc_loss.append(
                 (np.array(fake_batch_loss) + np.array(real_batch_loss)) / 2)
 
+            
+
             # we want to train the genrator to trick the discriminator
             # For the generator, we want all the {fake, real} labels to say
             # real
@@ -471,7 +476,7 @@ if __name__ == '__main__':
             # we do this twice simply to match the number of batches per epoch used to
             # train the discriminator
 
-            logger.info('training discriminator ')
+            
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
 
@@ -489,7 +494,7 @@ if __name__ == '__main__':
                     combined_outputs,
                     loss_weights
                 ))
-            logger.info('after training discriminator ')
+            
             epoch_gen_loss.append(np.mean(np.array(gen_losses), axis=0))
 
         logger.info('Epoch {:3d} Generator loss: {}'.format(

@@ -102,3 +102,6 @@ ENV/
 
 # singularity image file
 calogan-docker_latest.sif
+
+# .nfs file
+data/.nfs*
