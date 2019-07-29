@@ -171,16 +171,16 @@ if __name__ == '__main__':
 
         # make our calo images channels for each layer
         layers = []
-        for l in range(15):
+        for l in range(5):
             layers.append(np.expand_dims(d['layer_{}'.format(l)][:], -1))
 
         # convert to MeV
         energy = d['energy'][:].reshape(-1, 1) * 1000
 
-        ### I would like to consider 15 layers ILC calorimeter
+        ### I would like to consider 10 layers ILC calorimeter
         sizes = [
             layers[0].shape[1], layers[0].shape[2]
-        ] * 15
+        ] * 10
 
         y = [particle] * layers[0].shape[0]
 
@@ -210,14 +210,14 @@ if __name__ == '__main__':
     le = LabelEncoder()
     y = le.fit_transform(y)
 
-    for s in range(15):
+    for s in range(5):
         layers[s], y, energy = shuffle(layers[s], y, energy, random_state=0)
 
 
     logger.info('Building discriminator')
 
     calorimeter = []
-    for c in range(15):
+    for c in range(5):
         calorimeter.append(Input(shape=sizes[:2] + [1]))
 
 
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     features = []
     energies = []
 
-    for l in range(15):
+    for l in range(5):
         # build features per layer of calorimeter
         features.append(build_discriminator(
             image=calorimeter[l],
@@ -237,12 +237,12 @@ if __name__ == '__main__':
 
         energies.append(calculate_energy(calorimeter[l]))
 
-  
+
 
 
     features = concatenate(features)
 
-    # This is a (None, 15) tensor with the individual energy per layer
+    # This is a (None, 5) tensor with the individual energy per layer
     energies = concatenate(energies)
 
     # calculate the total energy across all rows
@@ -297,7 +297,7 @@ if __name__ == '__main__':
         else:
             discriminator_losses.append('binary_crossentropy')
 
-    
+
 
     discriminator = Model(calorimeter + [input_energy], discriminator_outputs)
 
@@ -335,8 +335,8 @@ if __name__ == '__main__':
 
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component
     img_layer = []
-    for i in range(15):
-        img_layer.append(build_generator(h, 10, 10))
+    for i in range(5):
+        img_layer.append(build_generator(h, 20, 20))
 
 
     if not no_attn:
@@ -344,13 +344,13 @@ if __name__ == '__main__':
         logger.info('using attentional mechanism')
         zero2one = AveragePooling2D(pool_size=(1, 1))(UpSampling2D(size=(1, 1))(img_layer[0]))
         img_layer[1] = inpainting_attention(img_layer[1], zero2one)
-        for j in range(1,14):
+        for j in range(1,4):
             one2N = AveragePooling2D(pool_size=(1, 1))(img_layer[j])
             img_layer[j+1] = inpainting_attention(img_layer[j+1], one2N)
 
     generator_outputs = []
 
-    for k in range(15):
+    for k in range(5):
         generator_outputs.append(Activation('relu')(img_layer[k]))
 
 
@@ -399,7 +399,7 @@ if __name__ == '__main__':
 
             # get a batch of real images
             image_batch = []
-            for l in range(15):
+            for l in range(5):
                 image_batch.append(layers[l][index * batch_size:(index + 1) * batch_size])
             #logger.info('after getting batch of real images')
 
@@ -437,16 +437,6 @@ if __name__ == '__main__':
                     image_batch[2],
                     image_batch[3],
                     image_batch[4],
-                    image_batch[5],
-                    image_batch[6],
-                    image_batch[7],
-                    image_batch[8],
-                    image_batch[9],
-                    image_batch[10],
-                    image_batch[11],
-                    image_batch[12],
-                    image_batch[13],
-                    image_batch[14],
                     energy_batch],
                 disc_outputs_real,
                 loss_weights
@@ -464,7 +454,7 @@ if __name__ == '__main__':
             epoch_disc_loss.append(
                 (np.array(fake_batch_loss) + np.array(real_batch_loss)) / 2)
 
-            
+
 
             # we want to train the genrator to trick the discriminator
             # For the generator, we want all the {fake, real} labels to say
@@ -476,7 +466,7 @@ if __name__ == '__main__':
             # we do this twice simply to match the number of batches per epoch used to
             # train the discriminator
 
-            
+
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
 
@@ -494,7 +484,7 @@ if __name__ == '__main__':
                     combined_outputs,
                     loss_weights
                 ))
-            
+
             epoch_gen_loss.append(np.mean(np.array(gen_losses), axis=0))
 
         logger.info('Epoch {:3d} Generator loss: {}'.format(
@@ -502,9 +492,10 @@ if __name__ == '__main__':
         logger.info('Epoch {:3d} Discriminator loss: {}'.format(
             epoch + 1, np.mean(epoch_disc_loss, axis=0)))
 
-        # save weights every epoch
-        generator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
+        # save weights every 10 epoch
+        if epoch % 10 == 0 :
+            generator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
                                overwrite=True)
 
-        discriminator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
+            discriminator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
                                    overwrite=True)
