@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 from h5py import File as HDF5File
 
-LAYER_SPECS = [(3, 96), (12, 12), (12, 6)]
+LAYER_SPECS = [(12, 12), (12, 12), (12, 12)]
 
 LAYER_DIV = np.cumsum(map(np.prod, LAYER_SPECS)).tolist()
 LAYER_DIV = zip([0] + LAYER_DIV, LAYER_DIV)
@@ -34,7 +34,7 @@ def write_out_file(infile, outfile, tree=None):
 
     assert len(cells) == sum(map(np.prod, LAYER_SPECS)) + OVERFLOW_BINS
     
-    for df in uproot.pandas.iterate(infile, "fancy_tree;1", branches = cells, entrysteps = len(cells)):
+    for df in uproot.pandas.iterate(infile, "fancy_tree;1", branches = cells):
         X = df
 
     for df in uproot.pandas.iterate(infile, "fancy_tree;1", branches = b'TotalEnergy'):
@@ -44,11 +44,12 @@ def write_out_file(infile, outfile, tree=None):
     E = E.values.ravel()
     #X = tree.pd.DataFrame(tree2array(T, branches=cells)).values
     #E = tree.pd.DataFrame(tree2array(T, branches=['TotalEnergy'])).values.ravel()
-
+    print(X.shape)
 
     with HDF5File(outfile, 'w') as h5:
             for layer, (sh, (l, u)) in enumerate(zip(LAYER_SPECS, LAYER_DIV)):
                 h5['layer_{}'.format(layer)] = X[:, l:u].reshape((-1, ) + sh)
+                print(u)
 
             h5['overflow'] = X[:, -OVERFLOW_BINS:]
             h5['energy'] = E.reshape(-1, 1)
