@@ -174,13 +174,13 @@ if __name__ == '__main__':
         for l in range(5):
             layers.append(np.expand_dims(d['layer_{}'.format(l)][:], -1))
 
-        # convert to MeV
-        energy = d['energy'][:].reshape(-1, 1) * 1000
+        # get the incident energy in MeV 
+        energy = d['energy'][:].reshape(-1, 1) 
 
-        ### I would like to consider 10 layers ILC calorimeter
+        ### I would like to consider 5 layers ILC calorimeter
         sizes = [
             layers[0].shape[1], layers[0].shape[2]
-        ] * 10
+        ] * 5
 
         y = [particle] * layers[0].shape[0]
 
@@ -259,25 +259,25 @@ if __name__ == '__main__':
     K_energy = Dense3D(nb_features, vspace_dim)(energies)
 
     # constrain w/ a tanh to dampen the unbounded nature of energy-space
-    mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
+    #mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
 
     # absolute deviation away from input energy. Technically we can learn
     # this, but since we want to get as close as possible to conservation of
     # energy, just coding it in is better
-    energy_well = Lambda(
-        lambda x: K.abs(x[0] - x[1])
-    )([total_energy, input_energy])
+    #energy_well = Lambda(
+    #    lambda x: K.abs(x[0] - x[1])
+    #)([total_energy, input_energy])
 
     # binary y/n if it is over the input energy
-    well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
+    #well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
 
     p = concatenate([
         features,
         scale(energies, 10),
-        scale(total_energy, 100),
-        energy_well,
-        well_too_big,
-        mbd_energy
+        scale(total_energy, 100)
+        #energy_well,
+        #well_too_big,
+        #mbd_energy
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
@@ -336,7 +336,7 @@ if __name__ == '__main__':
     # each of these builds a LAGAN-inspired [arXiv/1701.05927] component
     img_layer = []
     for i in range(5):
-        img_layer.append(build_generator(h, 20, 20))
+        img_layer.append(build_generator(h, 12, 12))
 
 
     if not no_attn:
@@ -409,7 +409,7 @@ if __name__ == '__main__':
             # energy_breakdown
 
             sampled_labels = np.random.randint(0, nb_classes, batch_size)
-            sampled_energies = np.random.uniform(80, 100, (batch_size, 1))
+            sampled_energies = np.random.uniform(50, 50, (batch_size, 1))
 
             generator_inputs = [noise, sampled_energies]
             if nb_classes > 1:
@@ -470,7 +470,7 @@ if __name__ == '__main__':
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
 
-                sampled_energies = np.random.uniform(80, 100, (batch_size, 1))
+                sampled_energies = np.random.uniform(50, 50, (batch_size, 1))
                 combined_inputs = [noise, sampled_energies]
                 combined_outputs = [trick, sampled_energies]
                 if nb_classes > 1:
@@ -492,10 +492,10 @@ if __name__ == '__main__':
         logger.info('Epoch {:3d} Discriminator loss: {}'.format(
             epoch + 1, np.mean(epoch_disc_loss, axis=0)))
 
-        # save weights every 10 epoch
-        if epoch % 10 == 0 :
-            generator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
+        # save weights every epoch
+	if epoch % 10 == 0 :
+        	generator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
                                overwrite=True)
 
-            discriminator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
+        	discriminator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
                                    overwrite=True)

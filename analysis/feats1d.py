@@ -14,7 +14,7 @@ def depth(d):
     For each event, it finds the deepest layer in which the shower has deposited some E.
     Args:
     -----
-d: an h5py File with fields 'layer_2', 'layer_1', 'layer_0'
+   d: an h5py File with fields 'layer_2', 'layer_1', 'layer_0'
    that represent the 2d cell grids and the corresponding
    E depositons.
     Returns:
@@ -27,23 +27,28 @@ d: an h5py File with fields 'layer_2', 'layer_1', 'layer_0'
 
 
 def total_energy(d):
-    '''
+   '''
     Calculates the total energy for each event across all layers.
     Args:
     -----
-d: an h5py File with fields 'layer_2', 'layer_1', 'layer_0'
-   that represent the 2d cell grids and the corresponding
-   E depositons.
-    '''
-    return d['layer_0'][:].sum(axis=(1, 2)) + d['layer_1'][:].sum(axis=(1, 2)) + d['layer_2'][:].sum(axis=(1, 2))
+    d: an h5py File with fields 'layer_2', 'layer_1' et al..
+    that represent the 2d cell grids and the corresponding
+    E depositons.
+   '''
+   Esum = 0.0
+   for l in range(5):
+   	Esum += d['layer_{}'.format(l)][:].sum(axis=(1,2))
+
+   return Esum
+	
 
 def energy(layer, d):
     '''
     Finds total E deposited in a given layer for each event.
     Args:
     -----
-layer: int in {0, 1, 2} that labels the layer
-d: an h5py File with fields 'layer_2', 'layer_1', 'layer_0'
+	layer: int in {0, 1, 2} that labels the layer
+	d: an h5py File with fields 'layer_2', 'layer_1', 'layer_0'
    that represent the 2d cell grids and the corresponding
    E depositons.
     Returns:

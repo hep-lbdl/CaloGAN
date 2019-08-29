@@ -107,3 +107,8 @@ calogan-docker_latest.sif
 
 # .nfs file
 data/.nfs*
+
+# some pdf and text files
+analysis/*.pdf
+analysis/*.txt
+analysis/shower-shapes
