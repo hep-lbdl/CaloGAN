@@ -409,7 +409,7 @@ if __name__ == '__main__':
             # energy_breakdown
 
             sampled_labels = np.random.randint(0, nb_classes, batch_size)
-            sampled_energies = np.random.uniform(50, 50, (batch_size, 1))
+            sampled_energies = np.random.uniform(10, 100, (batch_size, 1))
 
             generator_inputs = [noise, sampled_energies]
             if nb_classes > 1:
@@ -470,7 +470,7 @@ if __name__ == '__main__':
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
 
-                sampled_energies = np.random.uniform(50, 50, (batch_size, 1))
+                sampled_energies = np.random.uniform(10, 100, (batch_size, 1))
                 combined_inputs = [noise, sampled_energies]
                 combined_outputs = [trick, sampled_energies]
                 if nb_classes > 1:
