@@ -47,7 +47,6 @@
 #include "G4UIExecutive.hh"
 
 #include "time.h"
-#include "unistd.h"
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 namespace {

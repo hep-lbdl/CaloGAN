@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
+""" 
 file: train.py
 description: main training script for [arXiv/1705.02355]
-author: Luke de Oliveira (lukedeo@manifold.ai),
+author: Luke de Oliveira (lukedeo@manifold.ai), 
         Michela Paganini (michela.paganini@yale.edu)
 """
 
@@ -169,64 +169,60 @@ if __name__ == '__main__':
 
         d = h5py.File(datafile, 'r')
 
-        # make our calo images channels for each layer
-        layers = []
-        for l in range(5):
-            layers.append(np.expand_dims(d['layer_{}'.format(l)][:], -1))
+        # make our calo images channels-last
+        first = np.expand_dims(d['layer_0'][:], -1)
+        second = np.expand_dims(d['layer_1'][:], -1)
+        third = np.expand_dims(d['layer_2'][:], -1)
+        # convert to MeV
+        energy = d['energy'][:].reshape(-1, 1) * 1000
 
-        # get the incident energy in MeV 
-        energy = d['energy'][:].reshape(-1, 1) 
-
-        ### I would like to consider 5 layers ILC calorimeter
         sizes = [
-            layers[0].shape[1], layers[0].shape[2]
-        ] * 5
+            first.shape[1], first.shape[2],
+            second.shape[1], second.shape[2],
+            third.shape[1], third.shape[2]
+        ]
 
-        y = [particle] * layers[0].shape[0]
+        y = [particle] * first.shape[0]
 
         d.close()
 
-        return layers, y, energy, sizes
+        return first, second, third, y, energy, sizes
 
-    logger.info('loading data from {} files'.format(nb_classes))
+    logger.debug('loading data from {} files'.format(nb_classes))
 
-    layers, y, energy, sizes = [
+    first, second, third, y, energy, sizes = [
         np.concatenate(t) for t in [
             a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
         ]
     ]
 
-    #logger.info(print(layers[0].shape))
-
     # TO-DO: check that all sizes match, so I could be taking any of them
-    sizes = sizes[:30].tolist()
+    sizes = sizes[:6].tolist()
 
     # scale the energy depositions by 1000 to convert MeV => GeV
-    layers, energy = [
+    first, second, third, energy = [
         (X.astype(np.float32) / 1000)
-        for X in [layers, energy]
+        for X in [first, second, third, energy]
     ]
 
     le = LabelEncoder()
     y = le.fit_transform(y)
 
-    for s in range(5):
-        layers[s], y, energy = shuffle(layers[s], y, energy, random_state=0)
-
+    first, second, third, y, energy = shuffle(first, second, third, y, energy,
+                                              random_state=0)
 
     logger.info('Building discriminator')
 
-    calorimeter = []
-    for c in range(5):
-        calorimeter.append(Input(shape=sizes[:2] + [1]))
-
+    calorimeter = [Input(shape=sizes[:2] + [1]),
+                   Input(shape=sizes[2:4] + [1]),
+                   Input(shape=sizes[4:] + [1])]
 
     input_energy = Input(shape=(1, ))
 
     features = []
     energies = []
 
-    for l in range(5):
+    for l in range(3):
         # build features per layer of calorimeter
         features.append(build_discriminator(
             image=calorimeter[l],
@@ -237,12 +233,9 @@ if __name__ == '__main__':
 
         energies.append(calculate_energy(calorimeter[l]))
 
-
-
-
     features = concatenate(features)
 
-    # This is a (None, 5) tensor with the individual energy per layer
+    # This is a (None, 3) tensor with the individual energy per layer
     energies = concatenate(energies)
 
     # calculate the total energy across all rows
@@ -259,25 +252,25 @@ if __name__ == '__main__':
     K_energy = Dense3D(nb_features, vspace_dim)(energies)
 
     # constrain w/ a tanh to dampen the unbounded nature of energy-space
-    #mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
+    mbd_energy = Activation('tanh')(minibatch_featurizer(K_energy))
 
     # absolute deviation away from input energy. Technically we can learn
     # this, but since we want to get as close as possible to conservation of
     # energy, just coding it in is better
-    #energy_well = Lambda(
-    #    lambda x: K.abs(x[0] - x[1])
-    #)([total_energy, input_energy])
+    energy_well = Lambda(
+        lambda x: K.abs(x[0] - x[1])
+    )([total_energy, input_energy])
 
     # binary y/n if it is over the input energy
-    #well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
+    well_too_big = Lambda(lambda x: 10 * K.cast(x > 5, K.floatx()))(energy_well)
 
     p = concatenate([
         features,
         scale(energies, 10),
-        scale(total_energy, 100)
-        #energy_well,
-        #well_too_big,
-        #mbd_energy
+        scale(total_energy, 100),
+        energy_well,
+        well_too_big,
+        mbd_energy
     ])
 
     fake = Dense(1, activation='sigmoid', name='fakereal_output')(p)
@@ -296,8 +289,6 @@ if __name__ == '__main__':
             discriminator_losses.append('sparse_categorical_crossentropy')
         else:
             discriminator_losses.append('binary_crossentropy')
-
-
 
     discriminator = Model(calorimeter + [input_energy], discriminator_outputs)
 
@@ -333,26 +324,30 @@ if __name__ == '__main__':
         # requested energy comes in GeV
         h = Lambda(lambda x: x[0] * x[1])([latent, scale(input_energy, 100)])
 
-    # each of these builds a LAGAN-inspired [arXiv/1701.05927] component
-    img_layer = []
-    for i in range(5):
-        img_layer.append(build_generator(h, 12, 12))
-
+    # each of these builds a LAGAN-inspired [arXiv/1701.05927] component with
+    # linear last layer
+    img_layer0 = build_generator(h, 3, 96)
+    img_layer1 = build_generator(h, 12, 12)
+    img_layer2 = build_generator(h, 12, 6)
 
     if not no_attn:
 
         logger.info('using attentional mechanism')
-        zero2one = AveragePooling2D(pool_size=(1, 1))(UpSampling2D(size=(1, 1))(img_layer[0]))
-        img_layer[1] = inpainting_attention(img_layer[1], zero2one)
-        for j in range(1,4):
-            one2N = AveragePooling2D(pool_size=(1, 1))(img_layer[j])
-            img_layer[j+1] = inpainting_attention(img_layer[j+1], one2N)
 
-    generator_outputs = []
+        # resizes from (3, 96) => (12, 12)
+        zero2one = AveragePooling2D(pool_size=(1, 8))(
+            UpSampling2D(size=(4, 1))(img_layer0))
+        img_layer1 = inpainting_attention(img_layer1, zero2one)
 
-    for k in range(5):
-        generator_outputs.append(Activation('relu')(img_layer[k]))
+        # resizes from (12, 12) => (12, 6)
+        one2two = AveragePooling2D(pool_size=(1, 2))(img_layer1)
+        img_layer2 = inpainting_attention(img_layer2, one2two)
 
+    generator_outputs = [
+        Activation('relu')(img_layer0),
+        Activation('relu')(img_layer1),
+        Activation('relu')(img_layer2)
+    ]
 
     generator = Model(generator_inputs, generator_outputs)
 
@@ -378,7 +373,7 @@ if __name__ == '__main__':
     for epoch in range(nb_epochs):
         logger.info('Epoch {} of {}'.format(epoch + 1, nb_epochs))
 
-        nb_batches = int(layers[0].shape[0] / batch_size)
+        nb_batches = int(first.shape[0] / batch_size)
         if verbose:
             progress_bar = Progbar(target=nb_batches)
 
@@ -398,18 +393,16 @@ if __name__ == '__main__':
             noise = np.random.normal(0, 1, (batch_size, latent_size))
 
             # get a batch of real images
-            image_batch = []
-            for l in range(5):
-                image_batch.append(layers[l][index * batch_size:(index + 1) * batch_size])
-            #logger.info('after getting batch of real images')
-
+            image_batch_1 = first[index * batch_size:(index + 1) * batch_size]
+            image_batch_2 = second[index * batch_size:(index + 1) * batch_size]
+            image_batch_3 = third[index * batch_size:(index + 1) * batch_size]
             label_batch = y[index * batch_size:(index + 1) * batch_size]
             energy_batch = energy[index * batch_size:(index + 1) * batch_size]
 
             # energy_breakdown
 
             sampled_labels = np.random.randint(0, nb_classes, batch_size)
-            sampled_energies = np.random.uniform(10, 100, (batch_size, 1))
+            sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
 
             generator_inputs = [noise, sampled_energies]
             if nb_classes > 1:
@@ -432,16 +425,11 @@ if __name__ == '__main__':
                 loss_weights.append(0.2 * np.ones(batch_size))
 
             real_batch_loss = discriminator.train_on_batch(
-                [   image_batch[0],
-                    image_batch[1],
-                    image_batch[2],
-                    image_batch[3],
-                    image_batch[4],
-                    energy_batch],
+                [image_batch_1, image_batch_2, image_batch_3, energy_batch],
                 disc_outputs_real,
                 loss_weights
             )
-            #logger.info('after discriminator.train_on_batch function')
+
             # note that a given batch should have either *only* real or *only* fake,
             # as we have both minibatch discrimination and batch normalization, both
             # of which rely on batch level stats
@@ -454,8 +442,6 @@ if __name__ == '__main__':
             epoch_disc_loss.append(
                 (np.array(fake_batch_loss) + np.array(real_batch_loss)) / 2)
 
-
-
             # we want to train the genrator to trick the discriminator
             # For the generator, we want all the {fake, real} labels to say
             # real
@@ -465,12 +451,10 @@ if __name__ == '__main__':
 
             # we do this twice simply to match the number of batches per epoch used to
             # train the discriminator
-
-
             for _ in range(2):
                 noise = np.random.normal(0, 1, (batch_size, latent_size))
 
-                sampled_energies = np.random.uniform(10, 100, (batch_size, 1))
+                sampled_energies = np.random.uniform(1, 100, (batch_size, 1))
                 combined_inputs = [noise, sampled_energies]
                 combined_outputs = [trick, sampled_energies]
                 if nb_classes > 1:
@@ -493,9 +477,8 @@ if __name__ == '__main__':
             epoch + 1, np.mean(epoch_disc_loss, axis=0)))
 
         # save weights every epoch
-	if epoch % 10 == 0 :
-        	generator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
+        generator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.g_pfx, epoch),
                                overwrite=True)
 
-        	discriminator.save_weights('./data/{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
+        discriminator.save_weights('{0}{1:03d}.hdf5'.format(parse_args.d_pfx, epoch),
                                    overwrite=True)
