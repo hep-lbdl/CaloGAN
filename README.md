@@ -108,6 +108,23 @@ Performance evaluation is done both from a qualitative and a quantitative standp
 
 For quick handling, we have pre-extracted the shower shape variables into a pandas dataframe (stored as HDF5) and made it available available [on S3](https://s3-us-west-2.amazonaws.com/lukedeo-data/lbl/calogan/shower-shapes.h5). To load, you can simply do `pd.read_hdf('path/to/shower-shapes.h5')`.
 
+## Docker 
+
+Running in local : 
+
+$ `docker run -it --rm -v $PWD/CaloGAN:/home/CaloGAN engineren/calogan-docker python -m models.train models/particles.yaml`
+
+
+Running naf-ilc-gpu :
+
+$ `singularity pull docker://engineren/calogan-docker:latest`
+
+$ `singularity instance start --bind data:/home/CaloGAN/data --nv calogan-docker_latest.sif caloGAN`
+
+$ `singularity run instance://caloGAN python -m models.train models/particles.yaml`
+
+
+
 ## Copyright Notice
  
 “CaloGAN” Copyright (c) 2017, The Regents of the University of California, through Lawrence Berkeley National Laboratory (subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved.
