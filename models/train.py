@@ -106,7 +106,7 @@ if __name__ == '__main__':
     from keras.optimizers import Adam
     from keras.utils.generic_utils import Progbar
 
-    K.set_image_dim_ordering('tf')
+    K.image_data_format()
 
     from ops import (minibatch_discriminator, minibatch_output_shape, Dense3D,
                      calculate_energy, scale, inpainting_attention)
@@ -160,7 +160,7 @@ if __name__ == '__main__':
             raise exc
     nb_classes = len(s.keys())
     logger.info('{} particle types found.'.format(nb_classes))
-    for name, pth in s.iteritems():
+    for name, pth in s.items():
         logger.debug('class {} <= {}'.format(name, pth))
 
     def _load_data(particle, datafile):
@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     first, second, third, y, energy, sizes = [
         np.concatenate(t) for t in [
-            a for a in zip(*[_load_data(p, f) for p, f in s.iteritems()])
+            a for a in zip(*[_load_data(p, f) for p, f in s.items()])
         ]
     ]
 

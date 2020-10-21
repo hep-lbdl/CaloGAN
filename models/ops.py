@@ -79,8 +79,8 @@ def minibatch_output_shape(input_shape):
 
 
 def single_layer_energy(x):
-    shape = K.get_variable_shape(x)
-    return K.reshape(K.sum(x, axis=range(1, len(shape))), (-1, 1))
+    shape = x.shape
+    return K.reshape(K.sum(x, axis=list(range(1, len(shape)))), (-1, 1))
 
 
 def single_layer_energy_output_shape(input_shape):
@@ -98,11 +98,11 @@ def threshold_indicator(x, thresh):
 
 
 def sparsity_level(x):
-    _shape = K.get_variable_shape(x)
+    _shape = x.shape
     shape = K.shape(x)
     total = K.cast(K.prod(shape[1:]), K.floatx())
     return K.reshape(K.sum(
-        K.cast(x > 0.0, K.floatx()), axis=range(1, len(_shape))
+        K.cast(x > 0.0, K.floatx()), axis=list(range(1, len(_shape)))
     ), (-1, 1)) / total
 
 
