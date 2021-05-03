@@ -62,6 +62,8 @@ DetectorConstruction::DetectorConstruction()
  : G4VUserDetectorConstruction(),
    fAbsorberPV(0),
    fGapPV(0),
+   fAbsorberPV2(0),
+   fGapPV2(0),
    fCheckOverlaps(true)
 {
 }
@@ -114,19 +116,28 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
   G4int nofLayers = 80;
   G4double absoThickness = 2.*mm;
   G4double gapThickness =  4.*mm;
+
+  G4int nofLayers2 = 80;
+  G4double absoThickness2 = 2.*mm;
+  G4double gapThickness2 =  4.*mm;
   G4double calorSizeXY  = 100.*cm;
 
   G4double layerThickness = absoThickness + gapThickness;
   G4double calorThickness = nofLayers * layerThickness;
+  G4double layerThickness2 = absoThickness2 + gapThickness2;
+  G4double calorThickness2 = nofLayers2 * layerThickness2;
   G4double worldSizeXY = 1.2 * calorSizeXY;
-  G4double worldSizeZ  = 1.2 * calorThickness; 
+  G4double worldSizeZ  = 1.2 * (calorThickness+calorThickness2); 
   
   // Get materials
   G4Material* defaultMaterial = G4Material::GetMaterial("Galactic");
   G4Material* absorberMaterial = G4Material::GetMaterial("G4_Pb");
   G4Material* gapMaterial = G4Material::GetMaterial("liquidArgon");
+
+  G4Material* absorberMaterial2 = G4Material::GetMaterial("G4_Pb");
+  G4Material* gapMaterial2 = G4Material::GetMaterial("liquidArgon");
   
-  if ( ! defaultMaterial || ! absorberMaterial || ! gapMaterial ) {
+  if ( ! defaultMaterial || ! absorberMaterial || ! gapMaterial | ! absorberMaterial2 || ! gapMaterial2) {
     G4ExceptionDescription msg;
     msg << "Cannot retrieve materials already defined."; 
     G4Exception("DetectorConstruction::DefineVolumes()",
@@ -249,6 +260,89 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
                  0,                // copy number
                  fCheckOverlaps);  // checking overlaps 
   
+  //
+  // Calorimeter 2
+  //
+  G4VSolid* calorimeterS2
+    = new G4Box("Calorimeter 2",
+		calorSizeXY/2, calorSizeXY/2, calorThickness2/2);
+
+  G4LogicalVolume* calorLV2
+    = new G4LogicalVolume(
+			  calorimeterS2,
+			  defaultMaterial,
+			  "Calorimeter2");
+
+  new G4PVPlacement(
+		    0,                // no rotation
+		    G4ThreeVector(0,0,calorThickness),  // at (0,0,0)
+		    calorLV2,          // its logical volume
+		    "Calorimeter2",    // its name
+		    worldLV,          // its mother  volume
+		    false,            // no boolean operation
+		    0,                // copy number
+		    fCheckOverlaps);  // checking overlaps
+  
+
+  G4VSolid* layerS2
+    = new G4Box("Layer2",
+		calorSizeXY/2, calorSizeXY/2, layerThickness2/2);
+  
+  G4LogicalVolume* layerLV2
+    = new G4LogicalVolume(layerS2,
+			  defaultMaterial,
+			  "Layer2");
+  
+  new G4PVReplica(
+		  "Layer2",
+		  layerLV2,
+		  calorLV2,
+		  kZAxis,
+		  nofLayers2,
+		  layerThickness2);
+
+  G4VSolid* absorberS2
+    = new G4Box("Abso2",
+		calorSizeXY/2, calorSizeXY/2, absoThickness2/2);
+  
+  G4LogicalVolume* absorberLV2
+    = new G4LogicalVolume(
+			  absorberS2,
+			  absorberMaterial2,
+			  "Abso2");
+
+  fAbsorberPV2
+    = new G4PVPlacement(
+			0,
+			G4ThreeVector(0., 0., -gapThickness2/2),
+			absorberLV2,
+			"Abso2",
+			layerLV2,
+			false,
+			0,
+			fCheckOverlaps);
+
+  G4VSolid* gapS2
+    = new G4Box("Gap2",
+		calorSizeXY/2, calorSizeXY/2, gapThickness2/2);
+  
+  G4LogicalVolume* gapLV2
+    = new G4LogicalVolume(
+			  gapS2,
+			  gapMaterial2,
+			  "Gap2");
+
+  fGapPV2
+    = new G4PVPlacement(
+			0,
+			G4ThreeVector(0., 0., absoThickness2/2),
+			gapLV2, 
+			"Gap2",
+			layerLV2,
+			false,
+			0,
+			fCheckOverlaps);
+
   //
   // print parameters
   //

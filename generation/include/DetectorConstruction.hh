@@ -65,6 +65,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     //
     const G4VPhysicalVolume* GetAbsorberPV() const;
     const G4VPhysicalVolume* GetGapPV() const;
+    const G4VPhysicalVolume* GetAbsorberPV2() const;
+    const G4VPhysicalVolume* GetGapPV2() const;
      
   private:
     // methods
@@ -79,7 +81,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction
      
     G4VPhysicalVolume*   fAbsorberPV; // the absorber physical volume
     G4VPhysicalVolume*   fGapPV;      // the gap physical volume
-    
+    G4VPhysicalVolume*   fAbsorberPV2;
+    G4VPhysicalVolume*   fGapPV2;
+
     G4bool  fCheckOverlaps; // option to activate checking of volumes overlaps
 };
 
@@ -93,6 +97,13 @@ inline const G4VPhysicalVolume* DetectorConstruction::GetGapPV() const  {
   return fGapPV; 
 }
      
+inline const G4VPhysicalVolume* DetectorConstruction::GetAbsorberPV2() const {
+  return fAbsorberPV2;
+}
+
+inline const G4VPhysicalVolume* DetectorConstruction::GetGapPV2() const  {
+  return fGapPV2;
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

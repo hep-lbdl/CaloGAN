@@ -119,8 +119,9 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 // Collect energy and track length step by step
 
   // get volume of the current step
-  // G4VPhysicalVolume* volume 
-  //   = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
+  G4VPhysicalVolume* volume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
+  bool isabsorber = volume->GetName()=="Abso";
+  bool issensitive = volume->GetName()=="Gap";
   
   // energy deposit
   G4double edep = step->GetTotalEnergyDeposit();
@@ -138,7 +139,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 
   //G4cout << "sqr " << pos1.z() << " " << pos2.z() << " " << pos1.x() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetKineticEnergy() << G4endl;
       
-  //G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << G4endl;
+  G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << " " << issensitive << " " << volume->GetName() << G4endl;
   int mybin = WhichXYbin(pos1.x(),pos1.y(),WhichZBin(pos1.z()));
   // int mybin = 0;
   //G4cout << "zbin " << WhichZBin(pos1.z()) << " " << mybin << " " << mybin%100 << std::endl;
