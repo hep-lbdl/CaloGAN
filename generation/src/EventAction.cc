@@ -30,8 +30,10 @@
 
 #include "EventAction.hh"
 #include "RunData.hh"
+#include "Analysis.hh"
 
 #include "G4RunManager.hh"
+#include "G4EventManager.hh"
 #include "G4Event.hh"
 #include "G4UnitsTable.hh"
 
@@ -41,8 +43,13 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 EventAction::EventAction()
- : G4UserEventAction()
-{}
+  : G4UserEventAction(),
+    fvEdep(),
+    fvPos()
+{
+  fvEdep.resize(1,0.);
+  fvPos.resize(1,0.);
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -87,12 +94,28 @@ void EventAction::EndOfEventAction(const G4Event* event)
   G4PrimaryParticle* primaryParticle = primaryVertex->GetPrimary();
   G4double ke = primaryParticle->GetKineticEnergy()/1000.; //in GeV.
 
+  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+
   RunData* runData 
     = static_cast<RunData*>(
         G4RunManager::GetRunManager()->GetNonConstCurrentRun());
   runData->SetTotalEnergy(ke);
-  runData->FillPerEvent();
-  
+  //runData->FillPerEvent();
+
+  fvEdep.resize(1,0.);
+  fvEdep[0] = ke;
+  fvPos[0] = -1;
+  for (int i = 0; i < kNumCells; ++i) {
+    if (runData->GetEdep(i) > 0){
+      fvEdep.push_back(runData->GetEdep(i));
+      fvPos.push_back(i);
+    }
+    //analysisManager->FillNtupleDColumn(i, runData->GetEdep(i));
+  }
+  //analysisManager->FillNtupleDColumn(kNumCells, ke);
+  std::cout << fvEdep.size() << std::endl;
+  analysisManager->AddNtupleRow();
+
   //print per event (modulo n)
   //
   G4int eventID = event->GetEventID();

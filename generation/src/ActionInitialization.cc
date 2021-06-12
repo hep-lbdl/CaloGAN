@@ -53,7 +53,8 @@ ActionInitialization::~ActionInitialization()
 
 void ActionInitialization::BuildForMaster() const
 {
-  SetUserAction(new RunAction);
+  EventAction* eventAction = 0;
+  SetUserAction(new RunAction(eventAction));
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -61,8 +62,16 @@ void ActionInitialization::BuildForMaster() const
 void ActionInitialization::Build() const
 {
   SetUserAction(new PrimaryGeneratorAction);
-  SetUserAction(new RunAction);
-  SetUserAction(new EventAction);
+  //SetUserAction(new RunAction);
+  //EventAction* eventAction = 0;
+  //SetUserAction(new RunAction(eventAction));
+  //SetUserAction(new EventAction);
+  //SetUserAction(new SteppingAction(fDetConstruction));
+  
+  EventAction* eventAction = new EventAction;
+  SetUserAction(eventAction);
+  SetUserAction(new RunAction(eventAction));
+
   SetUserAction(new SteppingAction(fDetConstruction));
 }  
 
