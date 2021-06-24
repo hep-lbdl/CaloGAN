@@ -103,6 +103,7 @@ void EventAction::EndOfEventAction(const G4Event* event)
   //runData->FillPerEvent();
 
   fvEdep.resize(1,0.);
+  fvPos.resize(1,0.);
   fvEdep[0] = ke;
   fvPos[0] = -1;
   for (int i = 0; i < kNumCells; ++i) {
@@ -113,7 +114,7 @@ void EventAction::EndOfEventAction(const G4Event* event)
     //analysisManager->FillNtupleDColumn(i, runData->GetEdep(i));
   }
   //analysisManager->FillNtupleDColumn(kNumCells, ke);
-  std::cout << fvEdep.size() << std::endl;
+  std::cout << fvEdep.size() << " " << fvPos.size() << std::endl;
   analysisManager->AddNtupleRow();
 
   //print per event (modulo n)

@@ -73,7 +73,7 @@ RunAction::RunAction(EventAction* eventAction)
   //
 
   char const* val = getenv("GAN_TREENAME"); 
-  std::string fname = (val == NULL ? std::string("fancy_tree") : std::string(val));
+  std::string fname = (val == NULL ? std::string("cell_tree") : std::string(val));
 
 
   analysisManager->CreateNtuple(fname.c_str(), "Edep and TrackL");
