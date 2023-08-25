@@ -12,12 +12,12 @@ import pandas as pd
 import numpy as np
 from h5py import File as HDF5File
 
-LAYER_SPECS = [(3, 96), (12, 12), (12, 6)]
+LAYER_SPECS = [(3, 96), (12, 12), (12, 6), (3, 96), (12, 12), (12, 6)]
 
 LAYER_DIV = np.cumsum(map(np.prod, LAYER_SPECS)).tolist()
 LAYER_DIV = zip([0] + LAYER_DIV, LAYER_DIV)
 
-OVERFLOW_BINS = 3
+OVERFLOW_BINS = 6
 
 
 def write_out_file(infile, outfile, tree=None):
@@ -25,7 +25,7 @@ def write_out_file(infile, outfile, tree=None):
     T = f[tree]
 
     cells = filter(lambda x: x.startswith('cell'), T.branchnames)
-
+    print(len(cells))
     assert len(cells) == sum(map(np.prod, LAYER_SPECS)) + OVERFLOW_BINS
 
     X = pd.DataFrame(tree2array(T, branches=cells)).values

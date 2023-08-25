@@ -1,0 +1,10 @@
+universe = vanilla
++AccountingGroup = "group_rutgers.yp325"
+Executable =/het/p4/ian/miniconda3/envs/py2env/testing_bugfix/CaloGAN/generation/run_pipeline_CaloGAN.sh
+getenv = True
+should_transfer_files = NO
+Output = /het/p4/ian/miniconda3/envs/py2env/testing_bugfix/CaloGAN/generation/condor_job.out$(Process)
+Error = /het/p4/ian/miniconda3/envs/py2env/testing_bugfix/CaloGAN/generation/condor_job.err$(Process)
+Log = /het/p4/ian/miniconda3/envs/py2env/testing_bugfix/CaloGAN/generation/condor_job.log$(Process)
+arguments = $(Process)
+queue 102
