@@ -92,7 +92,11 @@ void DetectorConstruction::DefineMaterials()
   // Lead material defined using NIST Manager
   G4NistManager* nistManager = G4NistManager::Instance();
   nistManager->FindOrBuildMaterial("G4_Pb");
-  
+
+ // Lead material defined using NIST Manager
+  //G4NistManager* nistManager = G4NistManager::Instance();
+  nistManager->FindOrBuildMaterial("G4_W");
+ 
   // Liquid argon material
   G4double a;  // mass of a mole;
   G4double z;  // z=mean number of protons;  
@@ -117,9 +121,9 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
   G4double absoThickness = 2.*mm;
   G4double gapThickness =  4.*mm;
 
-  G4int nofLayers2 = 80;
-  G4double absoThickness2 = 2.*mm;
-  G4double gapThickness2 =  4.*mm;
+  G4int nofLayers2 = 80;//80;
+  G4double absoThickness2 = 8.*mm; //2.*mm;
+  G4double gapThickness2 =  16.*mm; //4.*mm;
   G4double calorSizeXY  = 100.*cm;
 
   G4double layerThickness = absoThickness + gapThickness;
@@ -134,7 +138,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
   G4Material* absorberMaterial = G4Material::GetMaterial("G4_Pb");
   G4Material* gapMaterial = G4Material::GetMaterial("liquidArgon");
 
-  G4Material* absorberMaterial2 = G4Material::GetMaterial("G4_Pb");
+  G4Material* absorberMaterial2 = G4Material::GetMaterial("G4_W");
   G4Material* gapMaterial2 = G4Material::GetMaterial("liquidArgon");
   
   if ( ! defaultMaterial || ! absorberMaterial || ! gapMaterial | ! absorberMaterial2 || ! gapMaterial2) {
@@ -183,7 +187,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
                                    
   new G4PVPlacement(
                  0,                // no rotation
-                 G4ThreeVector(),  // at (0,0,0)
+                 G4ThreeVector(0.,0.,-calorThickness2/2),  // at (0,0,0)
                  calorLV,          // its logical volume                         
                  "Calorimeter",    // its name
                  worldLV,          // its mother  volume
@@ -275,7 +279,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
 
   new G4PVPlacement(
 		    0,                // no rotation
-		    G4ThreeVector(0,0,calorThickness),  // at (0,0,0)
+		    G4ThreeVector(0,0,calorThickness/2),  // at (0,0,0)
 		    calorLV2,          // its logical volume
 		    "Calorimeter2",    // its name
 		    worldLV,          // its mother  volume
@@ -349,10 +353,14 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
   G4cout
     << G4endl 
     << "------------------------------------------------------------" << G4endl
-    << "---> The calorimeter is " << nofLayers << " layers of: [ "
+    << "---> The ECAL is " << nofLayers << " layers of: [ "
     << absoThickness/mm << "mm of " << absorberMaterial->GetName() 
     << " + "
     << gapThickness/mm << "mm of " << gapMaterial->GetName() << " ] " << G4endl
+    << "---> The HCAL is " << nofLayers2 << " layers of: [ "
+    << absoThickness2/mm << "mm of " << absorberMaterial2->GetName()
+    << " + "
+    << gapThickness2/mm << "mm of " << gapMaterial2->GetName() << " ] " << G4endl
     << "------------------------------------------------------------" << G4endl;
   
   //                                        

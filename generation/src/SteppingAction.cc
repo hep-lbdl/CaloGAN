@@ -55,10 +55,18 @@ SteppingAction::~SteppingAction()
 int SteppingAction::WhichZBin(double zpos){
 
   //zsegmentation = TH1F("","",3,np.array([-240.,-150.,197.,240.]))
-  if (zpos < -150.) return 0;
-  else if (zpos < 197.) return 1;
-  else return 2;
-
+  // if (zpos < -390.) return 0;
+  // else if (zpos < -43.) return 1;
+  // else if (zpos < 0.) return 2;
+  // else if (zpos < 90) return 3;
+  // else if (zpos < 437) return 4;
+  // else return 5;
+  if (zpos < -1110.) return 0;
+  else if (zpos < -763.) return 1;
+  else if (zpos < -720.) return 2;
+  else if (zpos < -360.) return 3;
+  else if (zpos < 1028.) return 4;
+  else return 5;
 }
 
 int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
@@ -70,8 +78,8 @@ int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
   int nbins1y = 96;
   int nbins2y = 12;
   int nbins3y = 6;
-  int nbinsx[]={nbins1x,nbins2x,nbins3x};
-  int nbinsy[]={nbins1y,nbins2y,nbins3y};
+  int nbinsx[]={nbins1x,nbins2x,nbins3x,nbins1x,nbins2x,nbins3x};
+  int nbinsy[]={nbins1y,nbins2y,nbins3y,nbins1y,nbins2y,nbins3y};
   for (int i=1; i<=nbinsx[zbin]; i++){
     if ((xpos < -240 + i*480/nbinsx[zbin]) && (xpos > -240)){
       xbin = i - 1;
@@ -93,7 +101,7 @@ int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
 
 
   if ((xbin == -1) || (ybin == -1)) {
-    return lvl1 + lvl2 + lvl3 + zbin;
+    return lvl1 + lvl2 + lvl3 + lvl1 + lvl2 + lvl3 + zbin;
   }
 
   if (zbin == 0) {
@@ -102,11 +110,21 @@ int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
   else if (zbin == 1) {
     return lvl1 + (xbin * nbins2y + ybin);
   }
-  else {
+  else if (zbin == 2) {
     return (lvl1 + lvl2) + (xbin * nbins3y + ybin);
   }
 
+  else if (zbin == 3) {
+    return (lvl1 + lvl2 + lvl3) + (xbin * nbins1y + ybin);
+  }
+  
+  else if (zbin == 4) {
+    return (lvl1 + lvl2 + lvl3 + lvl1) + (xbin * nbins2y + ybin);
+  }
 
+  else {
+    return (lvl1 + lvl2 + lvl3 + lvl1 + lvl2) + (xbin * nbins3y + ybin);
+  }
 
   // return zbin*1e4 + xbin*1e2 + ybin;
   //sampling1_eta = TH2F("","",3,-240.,240.,480/5,-240.,240.)
@@ -122,34 +140,36 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   G4VPhysicalVolume* volume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
   bool isabsorber = volume->GetName()=="Abso";
   bool issensitive = volume->GetName()=="Gap";
+  bool issensitive2 = volume->GetName()=="Gap2";
   
-  // energy deposit
-  G4double edep = step->GetTotalEnergyDeposit();
+  //if (issensitive || issensitive2) { #uncomment after test
+    // energy deposit
+    G4double edep = step->GetTotalEnergyDeposit();
   
-  // step length
-  // G4double stepLength = 0.;
-  // if ( step->GetTrack()->GetDefinition()->GetPDGCharge() != 0. ) {
-  //   stepLength = step->GetStepLength();
-  // }
+    // step length
+    // G4double stepLength = 0.;
+    // if ( step->GetTrack()->GetDefinition()->GetPDGCharge() != 0. ) {
+    //   stepLength = step->GetStepLength();
+    // }
 
-  G4StepPoint* point1 = step->GetPreStepPoint();
-  G4StepPoint* point2 = step->GetPostStepPoint();
-  G4ThreeVector pos1 = point1->GetPosition();
-  G4ThreeVector pos2 = point2->GetPosition();
+    G4StepPoint* point1 = step->GetPreStepPoint();
+    G4StepPoint* point2 = step->GetPostStepPoint();
+    G4ThreeVector pos1 = point1->GetPosition();
+    G4ThreeVector pos2 = point2->GetPosition();
 
-  //G4cout << "sqr " << pos1.z() << " " << pos2.z() << " " << pos1.x() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetKineticEnergy() << G4endl;
+    //G4cout << "sqr " << pos1.z() << " " << pos2.z() << " " << pos1.x() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetKineticEnergy() << G4endl;
       
-  //G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << " " << issensitive << " " << volume->GetName() << " " << step->GetTrack()->GetDefinition()->GetParticleName() << G4endl;
-  int mybin = WhichXYbin(pos1.x(),pos1.y(),WhichZBin(pos1.z()));
-  // int mybin = 0;
-  //G4cout << "zbin " << WhichZBin(pos1.z()) << " " << mybin << " " << mybin%100 << std::endl;
+    //G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << " " << issensitive << " " << volume->GetName() << " " << step->GetTrack()->GetDefinition()->GetParticleName() << G4endl;
+    int mybin = WhichXYbin(pos1.x(),pos1.y(),WhichZBin(pos1.z()));
+    // int mybin = 0;
+    //G4cout << "zbin " << WhichZBin(pos1.z()) << " " << mybin << " " << mybin%100 << std::endl;
   
-  RunData* runData = static_cast<RunData*>
-    (G4RunManager::GetRunManager()->GetNonConstCurrentRun());
+    RunData* runData = static_cast<RunData*>
+      (G4RunManager::GetRunManager()->GetNonConstCurrentRun());
 
-  // runData->Add(mybin, edep, stepLength); 
-  runData->Add(mybin, edep); 
-
+    // runData->Add(mybin, edep, stepLength); 
+    runData->Add(mybin, edep); 
+  //} #uncomment after test
   /*
   if ( volume == fDetConstruction->GetAbsorberPV() ) {
     runData->Add(kAbs, edep, stepLength);

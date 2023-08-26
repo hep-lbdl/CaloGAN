@@ -77,7 +77,7 @@ void RunData::FillPerEvent()
   //   analysisManager->FillNtupleDColumn(kDim+i, fTrackLength[i]);
   // }  
 
-  //analysisManager->AddNtupleRow();  
+  analysisManager->AddNtupleRow();  
 
 }
 

@@ -34,10 +34,6 @@
 #include "G4UserEventAction.hh"
 #include "globals.hh"
 
-#include <vector>
-
-using namespace std;
-
 /// Event action class
 ///
 /// In EndOfEventAction(), it prints the accumulated quantities of the energy 
@@ -53,13 +49,8 @@ class EventAction : public G4UserEventAction
     virtual void  BeginOfEventAction(const G4Event* event);
     virtual void    EndOfEventAction(const G4Event* event);
     
-    std::vector<G4double>& GetEdep() { return fvEdep; }
-    std::vector<G4double>& GetPos() { return fvPos; }
-
   private:
     // methods
-    std::vector<G4double> fvEdep;
-    std::vector<G4double> fvPos;
     void PrintEventStatistics(G4double absoEdep, G4double absoTrackLength,
                               G4double gapEdep, G4double gapTrackLength) const;
 };

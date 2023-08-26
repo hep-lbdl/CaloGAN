@@ -29,7 +29,6 @@
 /// \brief Implementation of the RunAction class
 
 #include "RunAction.hh"
-#include "EventAction.hh"
 #include "RunData.hh"
 #include "Analysis.hh"
 
@@ -41,9 +40,8 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-RunAction::RunAction(EventAction* eventAction)
-  : G4UserRunAction(),
-    fEventAction(eventAction)
+RunAction::RunAction()
+ : G4UserRunAction()
 { 
   // set printing event number per each event
   G4RunManager::GetRunManager()->SetPrintProgress(1);     
@@ -73,14 +71,13 @@ RunAction::RunAction(EventAction* eventAction)
   //
 
   char const* val = getenv("GAN_TREENAME"); 
-  std::string fname = (val == NULL ? std::string("cell_tree") : std::string(val));
+  std::string fname = (val == NULL ? std::string("fancy_tree") : std::string(val));
 
 
   analysisManager->CreateNtuple(fname.c_str(), "Edep and TrackL");
 
-  int total_bins = 504 + 3;  // 3 overflow bins for the three calo layers
+  int total_bins = 1008 + 6;  // 6 overflow bins for the six calo layers
 
-  /*
   for (int i = 0; i < total_bins; ++i) {
 
     std::stringstream out;
@@ -88,12 +85,7 @@ RunAction::RunAction(EventAction* eventAction)
     analysisManager->CreateNtupleDColumn("cell_" + out.str());
   }
   analysisManager->CreateNtupleDColumn("TotalEnergy");
-  std::cout << "is it stuck here?" << std::endl;
-  */
-
-  analysisManager->CreateNtupleDColumn("EnergyVector", fEventAction->GetEdep());
-  analysisManager->CreateNtupleDColumn("PositionVector", fEventAction->GetPos());
-  std::cout << "nope" << std::endl;
+  
   // analysisManager->CreateNtupleDColumn("Eabs");
   // analysisManager->CreateNtupleDColumn("Egap");
   // analysisManager->CreateNtupleDColumn("Labs");
