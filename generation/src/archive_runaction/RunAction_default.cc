@@ -32,18 +32,11 @@
 #include "RunData.hh"
 #include "Analysis.hh"
 
-#include "G4Eta.hh"
 #include "G4Run.hh"
 #include "G4RunManager.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
 #include <sstream>
-#include "G4DecayTable.hh"
-#include "G4ParticleDefinition.hh"
-#include "G4ParticleTable.hh"
-#include "G4PrimaryParticle.hh"
-#include "G4ParticleGun.hh"
-#include "G4VDecayChannel.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -118,40 +111,9 @@ G4Run* RunAction::GenerateRun()
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
 void RunAction::BeginOfRunAction(const G4Run* run)
-{ G4ParticleTable* theParticleTable = G4ParticleTable::GetParticleTable();
-   G4ParticleTable::G4PTblDicIterator* theParticleIterator;
-   theParticleIterator = theParticleTable->GetIterator();
-   theParticleIterator->reset();
-   while( (*theParticleIterator)() ){
-    G4ParticleDefinition* particle = theParticleIterator->value();
-    if (particle->GetParticleName() == "eta"){
-     particle->SetPDGLifeTime(particle->GetPDGLifeTime()*0.);
-     G4PrimaryParticle* pmass = new G4PrimaryParticle(particle);
-     pmass->SetMass(1.0*GeV);
-     //pmass->SetKineticEnergy(4.0*GeV);
-     std::cout << " Mass = " << pmass->GetMass() << ", Energy =  " << pmass->GetTotalEnergy() << " " << std::endl;
-     std::cout << " " << particle->GetPDGMass() << " " << std::endl;
-     G4DecayTable* kaondecay = pmass->GetDecayTable();
-     int ndecays = kaondecay->entries();
-     for (int j=0; j<ndecays; j++){
-      G4VDecayChannel* kaondecay_channel = kaondecay->GetDecayChannel(j);
-      std::cout << " " << j << " " << kaondecay_channel->GetBR() << " " << kaondecay_channel->GetNumberOfDaughters() << " " << std::endl;
-      if (kaondecay_channel->GetNumberOfDaughters()==2 && kaondecay_channel->GetDaughterName(0)=="gamma" && kaondecay_channel->GetDaughterName(1)=="gamma"){
-      std::cout << "asdflkjasd f" << std::endl;
-      kaondecay_channel->SetBR(1.);
-     }
-     else{
-      kaondecay_channel->SetBR(0.);
-     }
-     int ndd = kaondecay_channel->GetNumberOfDaughters();
-     for (int k=0; k<ndd; k++){
-      std::cout << "  >>> " << kaondecay_channel->GetDaughterName(k) << std::endl;
-     }
-    }
-   }
-  }
-  
+{ 
   G4cout << "### Run " << run->GetRunID() << " start." << G4endl;
 
   //inform the runManager to save random number seed

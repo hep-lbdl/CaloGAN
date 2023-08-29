@@ -48,7 +48,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 RunAction::RunAction()
- : G4UserRunAction()
+  : G4UserRunAction()
 { 
   // set printing event number per each event
   G4RunManager::GetRunManager()->SetPrintProgress(1);     
@@ -127,17 +127,17 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     G4ParticleDefinition* particle = theParticleIterator->value();
     if (particle->GetParticleName() == "eta"){
      particle->SetPDGLifeTime(particle->GetPDGLifeTime()*0.);
-     G4PrimaryParticle* pmass = new G4PrimaryParticle(particle);
-     pmass->SetMass(1.0*GeV);
+     //G4PrimaryParticle* pmass = new G4PrimaryParticle(particle);
+     //pmass->SetMass(1.0*GeV);
      //pmass->SetKineticEnergy(4.0*GeV);
-     std::cout << " Mass = " << pmass->GetMass() << ", Energy =  " << pmass->GetTotalEnergy() << " " << std::endl;
-     std::cout << " " << particle->GetPDGMass() << " " << std::endl;
-     G4DecayTable* kaondecay = pmass->GetDecayTable();
+     //std::cout << " " << pmass->GetMass() << " " << pmass->GetTotalMomentum() << " " << pmass->GetTotalEnergy() << " " << std::endl;
+     //std::cout << " " << particle->GetPDGMass() << " " << std::endl;
+     G4DecayTable* kaondecay = particle->GetDecayTable();
      int ndecays = kaondecay->entries();
      for (int j=0; j<ndecays; j++){
       G4VDecayChannel* kaondecay_channel = kaondecay->GetDecayChannel(j);
       std::cout << " " << j << " " << kaondecay_channel->GetBR() << " " << kaondecay_channel->GetNumberOfDaughters() << " " << std::endl;
-      if (kaondecay_channel->GetNumberOfDaughters()==2 && kaondecay_channel->GetDaughterName(0)=="gamma" && kaondecay_channel->GetDaughterName(1)=="gamma"){
+      if (kaondecay_channel->GetNumberOfDaughters()==3 && kaondecay_channel->GetDaughterName(0)=="pi0" && kaondecay_channel->GetDaughterName(1)=="pi0" && kaondecay_channel->GetDaughterName(2)=="pi0"){
       std::cout << "asdflkjasd f" << std::endl;
       kaondecay_channel->SetBR(1.);
      }
@@ -146,29 +146,29 @@ void RunAction::BeginOfRunAction(const G4Run* run)
      }
      int ndd = kaondecay_channel->GetNumberOfDaughters();
      for (int k=0; k<ndd; k++){
-      std::cout << "  >>> " << kaondecay_channel->GetDaughterName(k) << std::endl;
+     std::cout << "  >>> " << kaondecay_channel->GetDaughterName(k) << std::endl;
+     }
      }
     }
    }
-  }
   
-  G4cout << "### Run " << run->GetRunID() << " start." << G4endl;
+   G4cout << "### Run " << run->GetRunID() << " start." << G4endl;
 
-  //inform the runManager to save random number seed
-  //G4RunManager::GetRunManager()->SetRandomNumberStore(true);
+   //inform the runManager to save random number seed
+   //G4RunManager::GetRunManager()->SetRandomNumberStore(true);
   
-  // Get analysis manager
-  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+   // Get analysis manager
+   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
 
-  // Open an output file
-  //
+   // Open an output file
+   //
 
-  char const* val = getenv("GAN_FNAME"); 
-  std::string fname = (val == NULL ? std::string("plz_work_kthxbai") : std::string(val));
+   char const* val = getenv("GAN_FNAME"); 
+   std::string fname = (val == NULL ? std::string("plz_work_kthxbai") : std::string(val));
 
 
-  G4String fileName = fname.c_str();
-  analysisManager->OpenFile(fileName);
+   G4String fileName = fname.c_str();
+   analysisManager->OpenFile(fileName);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
