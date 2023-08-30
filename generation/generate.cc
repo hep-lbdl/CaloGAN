@@ -42,7 +42,12 @@
 #include "FTFP_BERT.hh"
 
 #include "Randomize.hh"
-
+#include "G4VDecayChannel.hh"
+#include "G4ParticleDefinition.hh"
+#include "G4EtaM.hh"
+#include "G4EtaMPhysics.hh"
+#include "G4ParticleTable.hh"
+#include "G4DecayTable.hh"
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
 
@@ -120,6 +125,12 @@ int main(int argc,char** argv)
   runManager->SetUserInitialization(detConstruction);
 
   G4VModularPhysicsList* physicsList = new FTFP_BERT;
+
+  // eta_m physics is added
+  G4EtaMPhysics * eta_m = new G4EtaMPhysics();
+
+  physicsList ->RegisterPhysics(eta_m);
+
   runManager->SetUserInitialization(physicsList);
     
   ActionInitialization* actionInitialization

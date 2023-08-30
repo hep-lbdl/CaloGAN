@@ -137,7 +137,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   G4ThreeVector pos2 = point2->GetPosition();
 
   //G4cout << "sqr " << pos1.z() << " " << pos2.z() << " " << pos1.x() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetKineticEnergy() << G4endl;
-  if(pos1.z()==0 && pos1.x()==0 && pos1.y()==0) G4cout << "sqr " << pos1.z() << " " << pos1.x() << " " << pos1.y() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetKineticEnergy() << G4endl;   
+  //if(pos1.z()==0 && pos1.x()==0 && pos1.y()==0) G4cout << "sqr " << pos1.z() << " " << pos1.x() << " " << pos1.y() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetTotalEnergy() << G4endl;   
+  //G4cout << "sqr " << pos1.z() << " " << pos1.x() << " " << pos1.y() << " " << pos2.x() << " " << edep << " " << step->GetTrack()->GetDefinition()->GetParticleName() << " " << step->GetTrack()->GetTotalEnergy() << G4endl;   
   //G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << G4endl;
   int mybin = WhichXYbin(pos1.x(),pos1.y(),WhichZBin(pos1.z()));
   // int mybin = 0;
