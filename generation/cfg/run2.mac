@@ -23,7 +23,7 @@
 #/gps/List #lists the particles you can shoot with G4
 /gps/particle pi+
 /gps/pos/type Beam
-/gps/pos/centre 0.0 0.0 -124.8  #-28.8
+/gps/pos/centre 0.0 0.0 -128.8  #-28.8
 /gps/direction 0 0 1
 /gps/ene/type Lin
 /gps/ene/min 1 GeV	

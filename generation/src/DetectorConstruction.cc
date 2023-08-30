@@ -104,6 +104,9 @@ void DetectorConstruction::DefineMaterials()
   new G4Material("liquidArgon", z=18., a= 39.95*g/mole, density= 1.390*g/cm3);
          // The argon by NIST Manager is a gas with a different density
 
+  // G4int ncomponents;
+  // new G4Material(name="Scintillator", density = 1.032*g/cm3, ncomponents=2);
+
   // Vacuum
   new G4Material("Galactic", z=1., a=1.01*g/mole,density= universe_mean_density,
                   kStateGas, 2.73*kelvin, 3.e-18*pascal);
@@ -122,15 +125,16 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
   G4double gapThickness =  4.*mm;
 
   G4int nofLayers2 = 80;//80;
-  G4double absoThickness2 = 8.*mm; //2.*mm;
-  G4double gapThickness2 =  16.*mm; //4.*mm;
+  G4double absoThickness2 = 21.*mm; //2.*mm;
+  G4double gapThickness2 =  4*mm; //4.*mm;
   G4double calorSizeXY  = 100.*cm;
+  G4double calorSizeXY2  = 1000.*cm;
 
   G4double layerThickness = absoThickness + gapThickness;
   G4double calorThickness = nofLayers * layerThickness;
   G4double layerThickness2 = absoThickness2 + gapThickness2;
   G4double calorThickness2 = nofLayers2 * layerThickness2;
-  G4double worldSizeXY = 1.2 * calorSizeXY;
+  G4double worldSizeXY = 1.2 * calorSizeXY2;
   G4double worldSizeZ  = 1.2 * (calorThickness+calorThickness2); 
   
   // Get materials
@@ -269,7 +273,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
   //
   G4VSolid* calorimeterS2
     = new G4Box("Calorimeter 2",
-		calorSizeXY/2, calorSizeXY/2, calorThickness2/2);
+		calorSizeXY2/2, calorSizeXY2/2, calorThickness2/2);
 
   G4LogicalVolume* calorLV2
     = new G4LogicalVolume(
@@ -290,7 +294,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
 
   G4VSolid* layerS2
     = new G4Box("Layer2",
-		calorSizeXY/2, calorSizeXY/2, layerThickness2/2);
+		calorSizeXY2/2, calorSizeXY2/2, layerThickness2/2);
   
   G4LogicalVolume* layerLV2
     = new G4LogicalVolume(layerS2,
@@ -307,7 +311,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
 
   G4VSolid* absorberS2
     = new G4Box("Abso2",
-		calorSizeXY/2, calorSizeXY/2, absoThickness2/2);
+		calorSizeXY2/2, calorSizeXY2/2, absoThickness2/2);
   
   G4LogicalVolume* absorberLV2
     = new G4LogicalVolume(
@@ -328,7 +332,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes()
 
   G4VSolid* gapS2
     = new G4Box("Gap2",
-		calorSizeXY/2, calorSizeXY/2, gapThickness2/2);
+		calorSizeXY2/2, calorSizeXY2/2, gapThickness2/2);
   
   G4LogicalVolume* gapLV2
     = new G4LogicalVolume(
