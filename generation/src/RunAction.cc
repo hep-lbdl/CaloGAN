@@ -125,14 +125,11 @@ void RunAction::BeginOfRunAction(const G4Run* run)
    theParticleIterator->reset();
    while( (*theParticleIterator)() ){
     G4ParticleDefinition* particle = theParticleIterator->value();
-    if (particle->GetParticleName() == "eta"){
-     particle->SetPDGLifeTime(particle->GetPDGLifeTime()*0.);
-     G4PrimaryParticle* pmass = new G4PrimaryParticle(particle);
-     pmass->SetMass(1.0*GeV);
-     //pmass->SetKineticEnergy(4.0*GeV);
-     std::cout << " Mass = " << pmass->GetMass() << ", Energy =  " << pmass->GetTotalEnergy() << " " << std::endl;
-     std::cout << " " << particle->GetPDGMass() << " " << std::endl;
-     G4DecayTable* kaondecay = pmass->GetDecayTable();
+    if (particle->GetParticleName() == "eta_m"){
+     particle->SetPDGLifeTime(0.015*ns);//change lifetime as required
+     std::cout << " Mass= " << particle->GetPDGMass() << " " << std::endl;
+     std::cout << " Lifetime= " << particle->GetPDGLifeTime() << " " << std::endl;
+     G4DecayTable* kaondecay = particle->GetDecayTable();
      int ndecays = kaondecay->entries();
      for (int j=0; j<ndecays; j++){
       G4VDecayChannel* kaondecay_channel = kaondecay->GetDecayChannel(j);
