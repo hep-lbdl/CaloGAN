@@ -48,9 +48,13 @@ def write_out_file(infiles, outfile, tree=None):
     E = E[:KEEP_NR]
     with HDF5File(outfile, 'w') as h5:
         for layer, (sh, (l, u)) in enumerate(zip(LAYER_SPECS, LAYER_DIV)):
-            h5['layer_{}'.format(layer)] = X[:, l:u].reshape((-1, ) + sh)#*5.
+            if layer <= 2:
+                h5['layer_{}'.format(layer)] = X[:, l:u].reshape((-1, ) + sh)*5.
 
-        h5['overflow'] = X[:, -OVERFLOW_BINS:]#*5.
+            else:
+                h5['layer_{}'.format(layer)] = X[:, l:u].reshape((-1, ) + sh)*74.4
+
+        h5['overflow'] = X[:, -OVERFLOW_BINS:] #no rescaling factor applied to overflow bins
         h5['energy'] = E.reshape(-1, 1)
 
 if __name__ == '__main__':

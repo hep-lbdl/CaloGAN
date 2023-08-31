@@ -61,11 +61,11 @@ int SteppingAction::WhichZBin(double zpos){
   // else if (zpos < 90) return 3;
   // else if (zpos < 437) return 4;
   // else return 5;
-  if (zpos < -1110.) return 0;
-  else if (zpos < -763.) return 1;
-  else if (zpos < -720.) return 2;
-  else if (zpos < -360.) return 3;
-  else if (zpos < 1028.) return 4;
+  if (zpos < -1150.) return 0;
+  else if (zpos < -803.) return 1;
+  else if (zpos < -760.) return 2;
+  else if (zpos < -385) return 3;
+  else if (zpos < 282) return 4;
   else return 5;
 }
 
@@ -80,16 +80,34 @@ int SteppingAction::WhichXYbin(double xpos, double ypos, int zbin){
   int nbins3y = 6;
   int nbinsx[]={nbins1x,nbins2x,nbins3x,nbins1x,nbins2x,nbins3x};
   int nbinsy[]={nbins1y,nbins2y,nbins3y,nbins1y,nbins2y,nbins3y};
-  for (int i=1; i<=nbinsx[zbin]; i++){
-    if ((xpos < -240 + i*480/nbinsx[zbin]) && (xpos > -240)){
-      xbin = i - 1;
-      break;
+
+  if (zbin<=2){
+    for (int i=1; i<=nbinsx[zbin]; i++){
+      if ((xpos < -240 + i*480/nbinsx[zbin]) && (xpos > -240)){
+        xbin = i - 1;
+        break;
+      }
+    }
+    for (int i=1; i<=nbinsy[zbin]; i++){
+      if ((ypos < -240 +i*480/nbinsy[zbin]) && (ypos > -240)){
+        ybin = i - 1;
+        break;
+      }
     }
   }
-  for (int i=1; i<=nbinsy[zbin]; i++){
-    if ((ypos < -240 +i*480/nbinsy[zbin]) && (ypos > -240)){
-      ybin = i - 1;
-      break;
+
+  else {
+    for (int i=1; i<=nbinsx[zbin]; i++){
+      if ((xpos < -1000 + i*2000/nbinsx[zbin]) && (xpos > -1000)){
+        xbin = i - 1;
+        break;
+      }
+    }
+    for (int i=1; i<=nbinsy[zbin]; i++){
+      if ((ypos < -1000 +i*2000/nbinsy[zbin]) && (ypos > -1000)){
+        ybin = i - 1;
+        break;
+      }
     }
   }
 
@@ -139,10 +157,10 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   // get volume of the current step
   G4VPhysicalVolume* volume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
   bool isabsorber = volume->GetName()=="Abso";
+  bool isabsorber2 = volume->GetName()=="Abso2";
   bool issensitive = volume->GetName()=="Gap";
   bool issensitive2 = volume->GetName()=="Gap2";
-  
-  //if (issensitive || issensitive2) { #uncomment after test
+   
     // energy deposit
     G4double edep = step->GetTotalEnergyDeposit();
   
@@ -161,6 +179,10 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
       
     //G4cout << "sqr " << pos1.x() << " " << pos1.y() << " " << pos1.z() << " " << edep << " " << issensitive << " " << volume->GetName() << " " << step->GetTrack()->GetDefinition()->GetParticleName() << G4endl;
     int mybin = WhichXYbin(pos1.x(),pos1.y(),WhichZBin(pos1.z()));
+
+    if ( pos1.z()>1240) {
+      G4cout << "!!!!!!!!!!!!!!!PARTICLES ESCAPED!!!!!!!!!!!!!!!!!!!!!!!!!!!!PARTICLES ESCAPED!!!!!!!!!!!!!"<< G4endl;
+    }
     // int mybin = 0;
     //G4cout << "zbin " << WhichZBin(pos1.z()) << " " << mybin << " " << mybin%100 << std::endl;
   
@@ -168,8 +190,11 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
       (G4RunManager::GetRunManager()->GetNonConstCurrentRun());
 
     // runData->Add(mybin, edep, stepLength); 
-    runData->Add(mybin, edep); 
-  //} #uncomment after test
+   if (issensitive || issensitive2) { runData->Add(mybin, edep);}
+
+   if (isabsorber || isabsorber2) { 
+    int mybin2 = 1008 + WhichZBin(pos1.z());
+    runData->Add(mybin2, edep);}
   /*
   if ( volume == fDetConstruction->GetAbsorberPV() ) {
     runData->Add(kAbs, edep, stepLength);
