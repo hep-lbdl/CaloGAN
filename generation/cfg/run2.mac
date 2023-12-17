@@ -21,7 +21,7 @@
 
 #see https://geant4.web.cern.ch/geant4/UserDocumentation/UsersGuides/ForApplicationDeveloper/html/ch02s07.html for details.
 #/gps/List #lists the particles you can shoot with G4
-/gps/particle eta_m
+/gps/particle gamma #eta_m
 /gps/pos/type Beam
 /gps/pos/centre 0.0 0.0 -28.8 #-24.0 #-28.8
 /gps/direction 0 0 1
