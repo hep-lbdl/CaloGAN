@@ -2,7 +2,7 @@
 # 
 # To be run preferably in batch, without graphics:
 # % example[a,b,c,d] run2.mac
-#
+
 # /run/numberOfWorkers 4
 /run/initialize
 #
@@ -21,9 +21,9 @@
 
 #see https://geant4.web.cern.ch/geant4/UserDocumentation/UsersGuides/ForApplicationDeveloper/html/ch02s07.html for details.
 #/gps/List #lists the particles you can shoot with G4
-/gps/particle e+
+/gps/particle gamma #eta_m
 /gps/pos/type Beam
-/gps/pos/centre 0.0 0.0 -28.8
+/gps/pos/centre 0.0 0.0 -28.8 #-24.0 #-28.8
 /gps/direction 0 0 1
 /gps/ene/type Lin
 /gps/ene/min 1 GeV	
@@ -31,4 +31,4 @@
 /gps/ene/gradient 0. #uniform
 /gps/ene/intercept 1	
 /gps/number 1 
-/run/beamOn 10
+/run/beamOn 1
